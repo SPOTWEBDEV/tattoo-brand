@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bare Skin Studio — Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-bg:          #121014;
+    --color-surface:     #1c1a1f;
+    --color-surface-alt: #242127;
+    --color-border:      #34303a;
+    --color-text:        #f6f2ef;
+    --color-text-muted:  #ab9fa4;
+    --color-accent:      #d81e3f;
+    --color-accent-text: #ffffff;
+    --color-success:     #3fc98a;
+    --color-warning:     #e9b64a;
+    --color-danger:      #ef6a5f;
+    --radius-card: 0.375rem;
+  }
+  body{ background:var(--color-bg); color:var(--color-text); font-family:'Poppins', ui-sans-serif, system-ui, sans-serif; }
+  .bg-surface{ background:var(--color-surface); }
+  .border-token{ border-color:var(--color-border); }
+  .text-muted{ color:var(--color-text-muted); }
+  input, select, textarea{ background:var(--color-surface); color:var(--color-text); }
+  input::placeholder, textarea::placeholder{ color:var(--color-text-muted); }
+  input:focus, select:focus, textarea:focus, button:focus-visible{ outline:2px solid var(--color-accent); outline-offset:1px; }
+
+  .btn-primary{ background:var(--color-accent); color:var(--color-accent-text); transition:opacity .15s ease, transform .15s ease; }
+  .btn-primary:hover{ opacity:.88; }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn-primary:active{ transform:scale(.97); }
+  .btn-outline{ background:transparent; color:var(--color-text); border:1px solid var(--color-border); transition:background-color .15s ease; }
+  .btn-outline:hover{ background:var(--color-surface); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .nav-tab{ transition:color .15s ease, border-color .15s ease; border-bottom:2px solid transparent; }
+  .nav-tab.active{ color:var(--color-text); border-color:var(--color-accent); }
+  .nav-tab:not(.active){ color:var(--color-text-muted); }
+
+  .badge{ display:inline-flex; align-items:center; padding:.15rem .6rem; border-radius:999px; font-size:.7rem; font-weight:600; }
+  .badge-upcoming{ background:rgba(233,182,74,.15); color:var(--color-warning); }
+  .badge-completed{ background:rgba(63,201,138,.15); color:var(--color-success); }
+  .badge-cancelled{ background:rgba(239,106,95,.15); color:var(--color-danger); }
+  .dot-unread{ width:.5rem; height:.5rem; border-radius:999px; background:var(--color-accent); display:inline-block; }
+
+  table{ border-collapse:collapse; width:100%; }
+  th{ text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; color:var(--color-text-muted); font-weight:600; padding:.6rem .75rem; border-bottom:1px solid var(--color-border); }
+  td{ padding:.75rem; border-bottom:1px solid var(--color-border); font-size:.875rem; vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  tr.row-hover:hover{ background:var(--color-surface); cursor:pointer; }
+
+  .stat-card{ border:1px solid var(--color-border); border-radius:.5rem; padding:1.25rem; background:var(--color-surface); }
+
+  .msg-card{ border:1px solid var(--color-border); border-radius:.5rem; padding:1rem 1.25rem; background:var(--color-surface); cursor:pointer; transition:border-color .15s ease; }
+  .msg-card:hover{ border-color:var(--color-accent); }
+  .msg-card.unread{ border-left:3px solid var(--color-accent); }
+
+  .bar-track{ background:var(--color-surface-alt); border-radius:999px; height:.5rem; overflow:hidden; }
+  .bar-fill{ background:var(--color-accent); height:100%; border-radius:999px; transition:width .5s ease; }
+
+  .spinner{ width:1rem; height:1rem; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; display:inline-block; animation:spin .6s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+
+<!-- =========================================================
+     LOGIN GATE — authenticates against api/login.php, which
+     starts a real PHP session. No password is stored client-side.
+========================================================= -->
+<section id="login-view" class="min-h-screen flex items-center justify-center px-4">
+  <form onsubmit="event.preventDefault(); attemptLogin();" class="w-full max-w-sm border border-token rounded-lg p-8 bg-surface">
+    <div class="flex items-center gap-2 mb-6">
+      <span class="w-8 h-8 rounded-full border border-token flex items-center justify-center text-sm font-semibold">B</span>
+      <span class="font-semibold tracking-tight text-lg">Bare Skin Studio — Admin</span>
+    </div>
+    <label class="block text-sm font-medium mb-1.5">Password</label>
+    <input id="login-password" type="password" required class="w-full border border-token rounded-md px-3 py-2.5 mb-2" placeholder="Enter admin password" />
+    <p id="login-error" class="hidden text-sm mb-3" style="color:var(--color-danger)">Incorrect password.</p>
+    <button id="login-btn" type="submit" class="btn-primary w-full rounded-md px-6 py-2.5 text-sm font-semibold mt-2">Sign in</button>
+    <p class="text-xs text-muted mt-4">Demo password: <code>bareskin2026</code> — change it in <code>api/config.php</code> before going live.</p>
+  </form>
+</section>
+
+<!-- =========================================================
+     ADMIN APP (shown after login)
+========================================================= -->
+<div id="admin-app" class="hidden">
+
+  <header class="sticky top-0 z-30 border-b border-token bg-[var(--color-bg)]/95 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-full border border-token flex items-center justify-center text-sm font-semibold">B</span>
+          <span class="font-semibold tracking-tight">Bare Skin Studio — Admin</span>
+        </div>
+        <button onclick="logout()" class="btn-outline rounded-md px-3 py-2 text-xs font-medium">Log out</button>
+      </div>
+      <nav class="flex gap-6 text-sm font-medium -mb-px">
+        <button onclick="showAdminView('dashboard')" data-tab="dashboard" class="nav-tab active py-3">Dashboard</button>
+        <button onclick="showAdminView('orders')" data-tab="orders" class="nav-tab py-3">Orders</button>
+        <button onclick="showAdminView('messages')" data-tab="messages" class="nav-tab py-3">Messages <span id="unread-tab-count" class="hidden"></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- =====================================================
+         DASHBOARD
+    ====================================================== -->
+    <section id="admin-view-dashboard" class="view active">
+      <h1 class="text-2xl font-semibold tracking-tight mb-6">Dashboard</h1>
+      <p id="dashboard-error" class="hidden text-sm mb-6" style="color:var(--color-danger)"></p>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div class="stat-card">
+          <p class="text-xs text-muted mb-2">Total orders</p>
+          <p id="stat-total-orders" class="text-2xl font-semibold">—</p>
+        </div>
+        <div class="stat-card">
+          <p class="text-xs text-muted mb-2">Deposits collected</p>
+          <p id="stat-revenue" class="text-2xl font-semibold">—</p>
+        </div>
+        <div class="stat-card">
+          <p class="text-xs text-muted mb-2">Upcoming appointments</p>
+          <p id="stat-upcoming" class="text-2xl font-semibold">—</p>
+        </div>
+        <div class="stat-card">
+          <p class="text-xs text-muted mb-2">Unread messages</p>
+          <p id="stat-unread" class="text-2xl font-semibold">—</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <div>
+          <h2 class="text-sm font-semibold mb-4">Studio vs. home service</h2>
+          <div id="service-split" class="space-y-3"></div>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold mb-4">Orders by status</h2>
+          <div id="status-split" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold">Recent orders</h2>
+            <button onclick="showAdminView('orders')" class="text-xs text-muted hover:text-[var(--color-text)]">View all</button>
+          </div>
+          <div id="recent-orders" class="border border-token rounded-lg overflow-hidden divide-y divide-token"></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold">Recent messages</h2>
+            <button onclick="showAdminView('messages')" class="text-xs text-muted hover:text-[var(--color-text)]">View all</button>
+          </div>
+          <div id="recent-messages" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         ORDERS
+    ====================================================== -->
+    <section id="admin-view-orders" class="view">
+      <h1 class="text-2xl font-semibold tracking-tight mb-6">Orders</h1>
+
+      <div class="flex flex-wrap gap-3 mb-6">
+        <input id="order-search" oninput="debouncedRenderOrders()" type="text" placeholder="Search name, email, or reference…" class="border border-token rounded-md px-3 py-2 text-sm flex-1 min-w-[200px]" />
+        <select id="order-status-filter" onchange="renderOrdersTable()" class="border border-token rounded-md px-3 py-2 text-sm">
+          <option value="all">All statuses</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <div class="border border-token rounded-lg overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Customer</th>
+              <th>Design</th>
+              <th>Service</th>
+              <th>Appointment</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="orders-table-body"></tbody>
+        </table>
+      </div>
+      <p id="orders-empty" class="hidden text-sm text-muted mt-6">No orders match this search/filter.</p>
+      <p id="orders-loading" class="text-sm text-muted mt-6">Loading…</p>
+    </section>
+
+    <!-- =====================================================
+         MESSAGES
+    ====================================================== -->
+    <section id="admin-view-messages" class="view">
+      <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 class="text-2xl font-semibold tracking-tight">Messages</h1>
+        <select id="message-filter" onchange="renderMessages()" class="border border-token rounded-md px-3 py-2 text-sm">
+          <option value="all">All messages</option>
+          <option value="unread">Unread only</option>
+        </select>
+      </div>
+      <div id="messages-list" class="space-y-3"></div>
+      <p id="messages-empty" class="hidden text-sm text-muted mt-6">No messages match this filter.</p>
+      <p id="messages-loading" class="text-sm text-muted mt-6">Loading…</p>
+    </section>
+
+  </main>
+</div>
+
+<!-- =========================================================
+     ORDER DETAIL MODAL
+========================================================= -->
+<div id="order-modal" class="hidden fixed inset-0 z-50 items-center justify-center px-4" style="background:rgba(0,0,0,.6);">
+  <div class="bg-[var(--color-bg)] border border-token rounded-lg max-w-lg w-full p-6 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <p class="text-xs text-muted">Order</p>
+        <p id="modal-order-ref" class="font-mono text-lg font-semibold"></p>
+      </div>
+      <span id="modal-order-badge"></span>
+    </div>
+    <div id="modal-order-body" class="space-y-4 text-sm"></div>
+    <p id="order-modal-error" class="hidden text-sm mt-3" style="color:var(--color-danger)"></p>
+    <div class="flex gap-2 mt-6 pt-6 border-t border-token">
+      <button onclick="setOrderStatus('completed')" class="btn-outline rounded-md px-3 py-2 text-xs font-medium flex-1">Mark completed</button>
+      <button onclick="setOrderStatus('cancelled')" class="btn-outline rounded-md px-3 py-2 text-xs font-medium flex-1">Cancel order</button>
+      <button onclick="deleteOrder()" class="btn-outline rounded-md px-3 py-2 text-xs font-medium" style="color:var(--color-danger); border-color:var(--color-danger);">Delete</button>
+    </div>
+    <button onclick="closeOrderModal()" class="btn-primary w-full rounded-md px-4 py-2.5 text-sm font-semibold mt-3">Close</button>
+  </div>
+</div>
+
+<!-- =========================================================
+     MESSAGE DETAIL MODAL — includes the reply composer, which
+     sends through api/reply_message.php using the branded
+     HTML email template server-side.
+========================================================= -->
+<div id="message-modal" class="hidden fixed inset-0 z-50 items-center justify-center px-4" style="background:rgba(0,0,0,.6);">
+  <div class="bg-[var(--color-bg)] border border-token rounded-lg max-w-lg w-full p-6 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <p id="modal-msg-name" class="font-semibold"></p>
+        <p id="modal-msg-email" class="text-xs text-muted"></p>
+      </div>
+      <p id="modal-msg-date" class="text-xs text-muted"></p>
+    </div>
+    <p id="modal-msg-placement" class="text-xs text-muted mb-3"></p>
+    <p id="modal-msg-body" class="text-sm mb-3 whitespace-pre-wrap border-l-2 border-token pl-3" style="color:var(--color-text-muted)"></p>
+    <p id="modal-msg-replied" class="hidden text-xs mb-4" style="color:var(--color-success)"></p>
+
+    <label class="block text-sm font-medium mb-1.5">Your reply</label>
+    <textarea id="reply-text" rows="5" placeholder="Write your reply — it'll be sent using the studio's branded email template." class="w-full border border-token rounded-md px-3 py-2.5 text-sm mb-2"></textarea>
+    <p id="reply-error" class="hidden text-sm mb-2" style="color:var(--color-danger)"></p>
+
+    <div class="flex gap-2">
+      <button id="send-reply-btn" onclick="sendReply()" class="btn-primary rounded-md px-4 py-2.5 text-sm font-semibold flex-1 flex items-center justify-center gap-2">
+        <span>Send reply</span>
+      </button>
+      <button onclick="deleteMessage()" class="btn-outline rounded-md px-3 py-2.5 text-sm font-medium" style="color:var(--color-danger); border-color:var(--color-danger);">Delete</button>
+    </div>
+    <a id="modal-msg-mailto" href="#" class="block text-center text-xs text-muted hover:text-[var(--color-text)] mt-3">or open in your own email client instead</a>
+    <button onclick="closeMessageModal()" class="btn-outline w-full rounded-md px-4 py-2.5 text-sm font-semibold mt-3">Close</button>
+  </div>
+</div>
+
+<script>
+const API_BASE = "api/";
+
+/* =========================================================
+   AUTH
+========================================================= */
+async function checkSession(){
+  try{
+    const res = await fetch(API_BASE + "check_session.php", { credentials: "same-origin" });
+    const data = await res.json();
+    if (data.authed){
+      showAdminApp();
+    }
+  } catch(e){ /* show login screen by default */ }
+}
+
+async function attemptLogin(){
+  const btn = document.getElementById("login-btn");
+  const errorEl = document.getElementById("login-error");
+  errorEl.classList.add("hidden");
+  btn.disabled = true;
+  btn.textContent = "Signing in…";
+
+  try{
+    const res = await fetch(API_BASE + "login.php", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: document.getElementById("login-password").value }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success){
+      showAdminApp();
+    } else {
+      errorEl.classList.remove("hidden");
+    }
+  } catch(e){
+    errorEl.textContent = "Could not reach the server. Is the PHP backend running?";
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Sign in";
+  }
+}
+
+function showAdminApp(){
+  document.getElementById("login-view").classList.add("hidden");
+  document.getElementById("admin-app").classList.remove("hidden");
+  refreshAll();
+}
+
+async function logout(){
+  try{ await fetch(API_BASE + "logout.php", { method: "POST", credentials: "same-origin" }); } catch(e){}
+  document.getElementById("admin-app").classList.add("hidden");
+  document.getElementById("login-view").classList.remove("hidden");
+  document.getElementById("login-password").value = "";
+}
+
+/* =========================================================
+   API HELPERS
+========================================================= */
+async function apiGet(path){
+  const res = await fetch(API_BASE + path, { credentials: "same-origin" });
+  if (res.status === 401){ logout(); throw new Error("Session expired"); }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+async function apiPost(path, body){
+  const res = await fetch(API_BASE + path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  if (res.status === 401){ logout(); throw new Error("Session expired"); }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+/* =========================================================
+   VIEW SWITCHING
+========================================================= */
+function showAdminView(name){
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("admin-view-" + name).classList.add("active");
+  document.querySelectorAll(".nav-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  if (name === "orders") renderOrdersTable();
+  if (name === "messages") renderMessages();
+}
+
+function refreshAll(){
+  renderDashboard();
+  const ordersView = document.getElementById("admin-view-orders");
+  if (ordersView.classList.contains("active")) renderOrdersTable();
+  const messagesView = document.getElementById("admin-view-messages");
+  if (messagesView.classList.contains("active")) renderMessages();
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function money(n){ return "$" + Number(n || 0).toLocaleString(); }
+
+async function renderDashboard(){
+  const errorEl = document.getElementById("dashboard-error");
+  errorEl.classList.add("hidden");
+  try{
+    const [ordersData, messagesData] = await Promise.all([
+      apiGet("list_orders.php"),
+      apiGet("list_messages.php"),
+    ]);
+    const orders = ordersData.orders || [];
+    const messages = messagesData.messages || [];
+
+    document.getElementById("stat-total-orders").textContent = orders.length;
+    document.getElementById("stat-revenue").textContent = money(orders.reduce((s,o) => s + Number(o.deposit || 0), 0));
+    document.getElementById("stat-upcoming").textContent = orders.filter(o => o.status === "upcoming").length;
+    const unread = messages.filter(m => !Number(m.is_read)).length;
+    document.getElementById("stat-unread").textContent = unread;
+
+    const unreadTab = document.getElementById("unread-tab-count");
+    if (unread > 0){
+      unreadTab.textContent = ` (${unread})`;
+      unreadTab.classList.remove("hidden");
+    } else {
+      unreadTab.classList.add("hidden");
+    }
+
+    const shopCount = orders.filter(o => o.service_type === "shop").length;
+    const homeCount = orders.filter(o => o.service_type === "home").length;
+    const total1 = Math.max(shopCount + homeCount, 1);
+    document.getElementById("service-split").innerHTML = `
+      <div>
+        <div class="flex justify-between text-xs mb-1"><span>In-studio</span><span class="text-muted">${shopCount}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(shopCount/total1)*100}%"></div></div>
+      </div>
+      <div>
+        <div class="flex justify-between text-xs mb-1"><span>Home service</span><span class="text-muted">${homeCount}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(homeCount/total1)*100}%"></div></div>
+      </div>
+    `;
+
+    const statuses = ["upcoming", "completed", "cancelled"];
+    const total2 = Math.max(orders.length, 1);
+    document.getElementById("status-split").innerHTML = statuses.map(s => {
+      const count = orders.filter(o => o.status === s).length;
+      return `
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="capitalize">${s}</span><span class="text-muted">${count}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(count/total2)*100}%"></div></div>
+        </div>
+      `;
+    }).join("");
+
+    const recentOrders = orders.slice(0, 5);
+    document.getElementById("recent-orders").innerHTML = recentOrders.length
+      ? recentOrders.map(o => `
+          <div onclick="openOrderModal('${o.ref}')" class="px-4 py-3 flex items-center justify-between text-sm cursor-pointer hover:bg-surface">
+            <div>
+              <p class="font-medium">${escapeHtml(o.customer_name)}</p>
+              <p class="text-xs text-muted">${escapeHtml(o.tattoo_title)}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-medium">${money(o.total)}</p>
+              <span class="badge badge-${o.status}">${o.status}</span>
+            </div>
+          </div>
+        `).join("")
+      : `<p class="text-sm text-muted p-4">No orders yet.</p>`;
+
+    const recentMessages = messages.slice(0, 5);
+    document.getElementById("recent-messages").innerHTML = recentMessages.length
+      ? recentMessages.map(m => `
+          <div onclick="openMessageModal('${m.msg_ref}')" class="msg-card ${Number(m.is_read) ? '' : 'unread'}">
+            <div class="flex items-center justify-between mb-1">
+              <p class="font-medium text-sm">${escapeHtml(m.name)}</p>
+              ${Number(m.is_read) ? '' : '<span class="dot-unread"></span>'}
+            </div>
+            <p class="text-xs text-muted line-clamp-2">${escapeHtml(m.message)}</p>
+          </div>
+        `).join("")
+      : `<p class="text-sm text-muted">No messages yet.</p>`;
+
+  } catch(e){
+    errorEl.textContent = "Could not load dashboard data — is the PHP/MySQL backend running and configured (see api/README.md)?";
+    errorEl.classList.remove("hidden");
+  }
+}
+
+/* =========================================================
+   ORDERS TABLE
+========================================================= */
+let orderSearchDebounce = null;
+function debouncedRenderOrders(){
+  clearTimeout(orderSearchDebounce);
+  orderSearchDebounce = setTimeout(renderOrdersTable, 300);
+}
+
+async function renderOrdersTable(){
+  const q = document.getElementById("order-search").value || "";
+  const status = document.getElementById("order-status-filter").value;
+  const loadingEl = document.getElementById("orders-loading");
+  const emptyEl = document.getElementById("orders-empty");
+  loadingEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+
+  try{
+    const params = new URLSearchParams({ q, status });
+    const data = await apiGet("list_orders.php?" + params.toString());
+    const orders = data.orders || [];
+
+    emptyEl.classList.toggle("hidden", orders.length > 0);
+
+    document.getElementById("orders-table-body").innerHTML = orders.map(o => `
+      <tr class="row-hover" onclick="openOrderModal('${o.ref}')">
+        <td class="font-mono text-xs">${o.ref}</td>
+        <td>
+          <p class="font-medium">${escapeHtml(o.customer_name)}</p>
+          <p class="text-xs text-muted">${escapeHtml(o.email)}</p>
+        </td>
+        <td>${escapeHtml(o.tattoo_title)} <span class="text-muted">(${escapeHtml(o.size_label)})</span></td>
+        <td class="text-xs">${o.service_type === "home" ? "Home — " + escapeHtml(o.service_location) : "In-studio"}</td>
+        <td class="text-xs">${o.appointment_at ? new Date(o.appointment_at).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : "—"}</td>
+        <td class="font-medium">${money(o.total)}</td>
+        <td><span class="badge badge-${o.status}">${o.status}</span></td>
+      </tr>
+    `).join("");
+  } catch(e){
+    document.getElementById("orders-table-body").innerHTML = "";
+    emptyEl.textContent = "Could not load orders.";
+    emptyEl.classList.remove("hidden");
+  } finally {
+    loadingEl.classList.add("hidden");
+  }
+}
+
+let activeOrderRef = null;
+let ordersCache = [];
+
+async function openOrderModal(ref){
+  try{
+    const data = await apiGet("list_orders.php?q=" + encodeURIComponent(ref));
+    const order = (data.orders || []).find(o => o.ref === ref);
+    if (!order) return;
+    activeOrderRef = ref;
+
+    document.getElementById("order-modal-error").classList.add("hidden");
+    document.getElementById("modal-order-ref").textContent = order.ref;
+    document.getElementById("modal-order-badge").innerHTML = `<span class="badge badge-${order.status}">${order.status}</span>`;
+    document.getElementById("modal-order-body").innerHTML = `
+      <div class="flex justify-between"><span class="text-muted">Customer</span><span>${escapeHtml(order.customer_name)}</span></div>
+      <div class="flex justify-between"><span class="text-muted">Email</span><span>${escapeHtml(order.email)}</span></div>
+      <div class="flex justify-between"><span class="text-muted">Phone</span><span>${escapeHtml(order.phone)}</span></div>
+      <div class="flex justify-between"><span class="text-muted">Design</span><span>${escapeHtml(order.tattoo_title)} (${escapeHtml(order.size_label)})</span></div>
+      <div class="flex justify-between"><span class="text-muted">Service</span><span>${order.service_type === "home" ? "Home — " + escapeHtml(order.service_location) : "In-studio, New York"}</span></div>
+      <div class="flex justify-between"><span class="text-muted">Appointment</span><span>${order.appointment_at ? new Date(order.appointment_at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "—"}</span></div>
+      ${order.notes ? `<div class="pt-2 border-t border-token"><span class="text-muted block mb-1">Notes</span><span>${escapeHtml(order.notes)}</span></div>` : ""}
+      <div class="pt-3 border-t border-token space-y-1">
+        <div class="flex justify-between"><span class="text-muted">Item total</span><span>${money(order.item_total)}</span></div>
+        ${Number(order.fee) ? `<div class="flex justify-between"><span class="text-muted">Travel fee</span><span>${money(order.fee)}</span></div>` : ""}
+        <div class="flex justify-between"><span class="text-muted">Deposit paid</span><span>${money(order.deposit)}</span></div>
+        <div class="flex justify-between"><span class="text-muted">Balance due</span><span>${money(order.balance)}</span></div>
+        <div class="flex justify-between font-semibold pt-1"><span>Total</span><span>${money(order.total)}</span></div>
+      </div>
+    `;
+
+    const modal = document.getElementById("order-modal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  } catch(e){
+    alert("Could not load order details.");
+  }
+}
+
+function closeOrderModal(){
+  const modal = document.getElementById("order-modal");
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  activeOrderRef = null;
+}
+
+async function setOrderStatus(status){
+  if (!activeOrderRef) return;
+  const errorEl = document.getElementById("order-modal-error");
+  try{
+    await apiPost("update_order_status.php", { ref: activeOrderRef, status });
+    closeOrderModal();
+    refreshAll();
+  } catch(e){
+    errorEl.textContent = "Could not update order status.";
+    errorEl.classList.remove("hidden");
+  }
+}
+
+async function deleteOrder(){
+  if (!activeOrderRef) return;
+  if (!confirm("Delete this order permanently?")) return;
+  try{
+    await apiPost("delete_order.php", { ref: activeOrderRef });
+    closeOrderModal();
+    refreshAll();
+  } catch(e){
+    document.getElementById("order-modal-error").textContent = "Could not delete order.";
+    document.getElementById("order-modal-error").classList.remove("hidden");
+  }
+}
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+async function renderMessages(){
+  const filter = document.getElementById("message-filter").value;
+  const loadingEl = document.getElementById("messages-loading");
+  const emptyEl = document.getElementById("messages-empty");
+  loadingEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+
+  try{
+    const data = await apiGet("list_messages.php?filter=" + encodeURIComponent(filter));
+    const messages = data.messages || [];
+    emptyEl.classList.toggle("hidden", messages.length > 0);
+
+    document.getElementById("messages-list").innerHTML = messages.map(m => `
+      <div onclick="openMessageModal('${m.msg_ref}')" class="msg-card ${Number(m.is_read) ? '' : 'unread'}">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <p class="font-medium text-sm">${escapeHtml(m.name)}</p>
+            ${Number(m.is_read) ? '' : '<span class="dot-unread"></span>'}
+          </div>
+          <p class="text-xs text-muted">${new Date(m.created_at).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</p>
+        </div>
+        <p class="text-xs text-muted mb-1">${escapeHtml(m.email)}${m.placement ? " · " + escapeHtml(m.placement) : ""}</p>
+        <p class="text-sm line-clamp-2">${escapeHtml(m.message)}</p>
+      </div>
+    `).join("");
+  } catch(e){
+    document.getElementById("messages-list").innerHTML = "";
+    emptyEl.textContent = "Could not load messages.";
+    emptyEl.classList.remove("hidden");
+  } finally {
+    loadingEl.classList.add("hidden");
+  }
+}
+
+let activeMessageRef = null;
+async function openMessageModal(ref){
+  try{
+    const data = await apiGet("list_messages.php");
+    const msg = (data.messages || []).find(m => m.msg_ref === ref);
+    if (!msg) return;
+    activeMessageRef = ref;
+
+    document.getElementById("reply-error").classList.add("hidden");
+    document.getElementById("reply-text").value = "";
+    document.getElementById("modal-msg-name").textContent = msg.name;
+    document.getElementById("modal-msg-email").textContent = msg.email;
+    document.getElementById("modal-msg-date").textContent = new Date(msg.created_at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"});
+    document.getElementById("modal-msg-placement").textContent = msg.placement ? "Placement concept: " + msg.placement : "";
+    document.getElementById("modal-msg-body").textContent = msg.message;
+    document.getElementById("modal-msg-mailto").href = `mailto:${encodeURIComponent(msg.email)}?subject=${encodeURIComponent("Re: Your inquiry to Bare Skin Studio")}`;
+
+    const repliedEl = document.getElementById("modal-msg-replied");
+    if (msg.replied_at){
+      repliedEl.textContent = "Replied " + new Date(msg.replied_at).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"});
+      repliedEl.classList.remove("hidden");
+    } else {
+      repliedEl.classList.add("hidden");
+    }
+
+    const modal = document.getElementById("message-modal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+
+    if (!Number(msg.is_read)){
+      await apiPost("mark_message_read.php", { ref });
+      renderDashboard();
+      const messagesView = document.getElementById("admin-view-messages");
+      if (messagesView.classList.contains("active")) renderMessages();
+    }
+  } catch(e){
+    alert("Could not load message.");
+  }
+}
+
+function closeMessageModal(){
+  const modal = document.getElementById("message-modal");
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  activeMessageRef = null;
+}
+
+async function sendReply(){
+  if (!activeMessageRef) return;
+  const replyText = document.getElementById("reply-text").value.trim();
+  const errorEl = document.getElementById("reply-error");
+  const btn = document.getElementById("send-reply-btn");
+  errorEl.classList.add("hidden");
+
+  if (!replyText){
+    errorEl.textContent = "Write a reply before sending.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span><span>Sending…</span>';
+
+  try{
+    await apiPost("reply_message.php", { ref: activeMessageRef, reply: replyText });
+    closeMessageModal();
+    refreshAll();
+  } catch(e){
+    errorEl.textContent = e.message || "Could not send the reply — check the server's mail configuration (see api/README.md).";
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "<span>Send reply</span>";
+  }
+}
+
+async function deleteMessage(){
+  if (!activeMessageRef) return;
+  if (!confirm("Delete this message permanently?")) return;
+  try{
+    await apiPost("delete_message.php", { ref: activeMessageRef });
+    closeMessageModal();
+    refreshAll();
+  } catch(e){
+    document.getElementById("reply-error").textContent = "Could not delete message.";
+    document.getElementById("reply-error").classList.remove("hidden");
+  }
+}
+
+/* =========================================================
+   UTIL
+========================================================= */
+function escapeHtml(str){
+  return String(str || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+checkSession();
+</script>
+
+</body>
+</html>

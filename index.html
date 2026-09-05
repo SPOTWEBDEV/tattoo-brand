@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bare Skin Studio — Tattoo Booking</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------------------------------------------------------------
+     THEME TOKENS
+     Every color in this file is driven by these CSS variables.
+     Dark theme with a crimson ink accent — swap the values below
+     to re-skin the entire app, no other edits required.
+  ----------------------------------------------------------------*/
+  :root{
+    --color-bg:          #121014;
+    --color-surface:     #1c1a1f;
+    --color-surface-alt: #242127;
+    --color-border:      #34303a;
+    --color-text:        #f6f2ef;
+    --color-text-muted:  #ab9fa4;
+    --color-accent:      #d81e3f;   /* primary action color — ink red */
+    --color-accent-text: #ffffff;   /* text on accent */
+    --color-star:        #e9b64a;   /* gold star rating fill */
+    --color-star-empty:  #3d3840;
+    --color-danger:      #ef6a5f;
+    --radius-card: 0.375rem;
+  }
+
+  body{
+    background:var(--color-bg);
+    color:var(--color-text);
+    font-family:'Poppins', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .bg-surface{ background:var(--color-surface); }
+  .bg-surface-alt{ background:var(--color-surface-alt); }
+  .border-token{ border-color:var(--color-border); }
+  .text-muted{ color:var(--color-text-muted); }
+
+  .btn-primary{
+    background:var(--color-accent);
+    color:var(--color-accent-text);
+  }
+  .btn-primary:hover{ opacity:.88; }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn-primary:focus-visible{ outline:2px solid var(--color-accent); outline-offset:2px; }
+
+  .btn-outline{
+    background:transparent;
+    color:var(--color-text);
+    border:1px solid var(--color-border);
+  }
+  .btn-outline:hover{ background:var(--color-surface); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  input:focus, textarea:focus, select:focus, button:focus-visible{
+    outline:2px solid var(--color-accent);
+    outline-offset:1px;
+  }
+
+  input, textarea, select{ background:var(--color-surface); color:var(--color-text); }
+  input::placeholder, textarea::placeholder{ color:var(--color-text-muted); }
+
+  .art-icon svg{ width:100%; height:100%; }
+  .art-icon img{ width:100%; height:100%; object-fit:cover; transition:transform .5s ease; }
+  .group:hover .art-icon img{ transform:scale(1.07); }
+
+  .option-card{ cursor:pointer; }
+  .option-card.selected{ border-color:var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
+
+  .star-row{ position:relative; display:inline-block; font-size:1rem; line-height:1; letter-spacing:2px; white-space:nowrap; }
+  .star-row .bg-stars{ color:var(--color-star-empty); }
+  .star-row .fg-stars{ position:absolute; top:0; left:0; overflow:hidden; color:var(--color-star); white-space:nowrap; }
+
+  details[open] summary .chev{ transform:rotate(180deg); }
+  .chev{ transition:transform .15s ease; }
+
+  /* ---------------------------------------------------------------
+     ANIMATION
+  ----------------------------------------------------------------*/
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in-view{ opacity:1; transform:translateY(0); }
+
+  .card-hover{ transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+  .card-hover:hover{ transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.35); border-color:var(--color-accent); }
+
+  .btn-primary, .btn-outline{ transition:transform .15s ease, opacity .15s ease, background-color .15s ease, box-shadow .15s ease; }
+  .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(216,30,63,.35); }
+  .btn-primary:active, .btn-outline:active{ transform:scale(.96); }
+
+  .nav-link{ position:relative; padding-bottom:2px; }
+  .nav-link::after{ content:''; position:absolute; left:0; bottom:-2px; width:0; height:1.5px; background:var(--color-accent); transition:width .25s ease; }
+  .nav-link:hover::after{ width:100%; }
+
+  .filter-btn{ transition:background-color .2s ease, color .2s ease, border-color .2s ease, transform .15s ease; }
+  .filter-btn:hover{ transform:translateY(-1px); }
+  .filter-btn.active{ background:var(--color-accent); color:var(--color-accent-text); border-color:var(--color-accent); }
+
+  @keyframes badgePulse{ 0%{ transform:scale(1); } 45%{ transform:scale(1.35); } 100%{ transform:scale(1); } }
+  .badge-pulse{ animation:badgePulse .45s ease; }
+
+  @keyframes heroFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+  #hero-art{ animation:heroFloat 6s ease-in-out infinite; }
+
+  @keyframes shimmer{ 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
+  .skeleton{ background:linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-alt) 50%, var(--color-surface) 75%); background-size:200% 100%; animation:shimmer 1.4s ease infinite; }
+
+  @media (prefers-reduced-motion: reduce){
+    .reveal, .card-hover, .btn-primary, .btn-outline, .art-icon img, #hero-art{ animation:none !important; transition:none !important; }
+    .reveal{ opacity:1 !important; transform:none !important; }
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .transition-view{ animation: fadeIn .25s ease; }
+    #price-modal[data-open="true"] .modal-panel{ animation: modalIn .18s ease; }
+  }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes modalIn{ from{opacity:0; transform:scale(.97);} to{opacity:1; transform:scale(1);} }
+
+  @media print{
+    .no-print{ display:none !important; }
+    #receipt-view{ display:block !important; }
+    body{ background:#fff; color:#111; }
+    body *{ visibility:hidden; }
+    #receipt-card, #receipt-card *{ visibility:visible; color:#111 !important; border-color:#ccc !important; }
+    #receipt-card{ position:absolute; top:0; left:0; width:100%; background:#fff; }
+  }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+
+<!-- =========================================================
+     HEADER / NAVIGATION
+     Fixed left brand · center-right nav links · right action area
+========================================================= -->
+<header class="no-print sticky top-0 z-40 border-b border-token bg-[var(--color-bg)]/90 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Brand -->
+      <button onclick="showView('home-view')" class="flex items-center gap-2 shrink-0">
+        <span class="w-8 h-8 rounded-full border border-token flex items-center justify-center text-sm font-semibold">B</span>
+        <span class="font-semibold tracking-tight text-lg">Bare Skin Studio</span>
+      </button>
+
+      <!-- Nav links -->
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+        <a href="#home" onclick="showView('home-view'); return false;" class="nav-link hover:text-muted">Home</a>
+        <a href="#gallery" onclick="showView('home-view'); scrollToSection('gallery-section'); return false;" class="nav-link hover:text-muted">Gallery</a>
+        <a href="#booking" onclick="showView('home-view'); scrollToSection('home-service-section'); return false;" class="nav-link hover:text-muted">Home Service</a>
+        <a href="#artist" onclick="showView('home-view'); scrollToSection('artist-section'); return false;" class="nav-link hover:text-muted">Artist</a>
+        <a href="#faq" onclick="showView('home-view'); scrollToSection('faq-section'); return false;" class="nav-link hover:text-muted">FAQ</a>
+        <a href="#contact" onclick="showView('home-view'); scrollToSection('contact-section'); return false;" class="nav-link hover:text-muted">Contact</a>
+      </nav>
+
+      <!-- Action area -->
+      <div class="flex items-center gap-3">
+        <button onclick="goToCartFlow()" class="relative flex items-center gap-2 border border-token rounded-md px-3 py-2 text-sm font-medium hover:bg-surface">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 1.994-4.693 2.608-7.164.075-.3-.155-.586-.465-.586H5.106M7.5 14.25L5.106 5.272M6 18.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+          </svg>
+          <span class="hidden sm:inline">Checkout</span>
+          <span id="cart-badge" class="absolute -top-2 -right-2 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-[var(--color-accent)] text-[var(--color-accent-text)] text-[0.65rem] leading-[1.1rem] text-center font-semibold">0</span>
+        </button>
+
+        <!-- Mobile menu toggle -->
+        <button id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu" aria-expanded="false" class="md:hidden p-2 -mr-1 border border-token rounded-md">
+          <svg id="menu-icon-open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+          </svg>
+          <svg id="menu-icon-close" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile nav panel -->
+  <div id="mobile-nav" class="hidden md:hidden border-t border-token bg-[var(--color-bg)]">
+    <nav class="flex flex-col px-4 sm:px-6 py-3 text-sm font-medium divide-y divide-token">
+      <a href="#home" onclick="showView('home-view'); closeMobileMenu(); return false;" class="py-3">Home</a>
+      <a href="#gallery" onclick="showView('home-view'); scrollToSection('gallery-section'); closeMobileMenu(); return false;" class="py-3">Gallery</a>
+      <a href="#booking" onclick="showView('home-view'); scrollToSection('home-service-section'); closeMobileMenu(); return false;" class="py-3">Home Service</a>
+      <a href="#artist" onclick="showView('home-view'); scrollToSection('artist-section'); closeMobileMenu(); return false;" class="py-3">Artist</a>
+      <a href="#faq" onclick="showView('home-view'); scrollToSection('faq-section'); closeMobileMenu(); return false;" class="py-3">FAQ</a>
+      <a href="#contact" onclick="showView('home-view'); scrollToSection('contact-section'); closeMobileMenu(); return false;" class="py-3">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Data-source warning banner, shown only if tattoos.json fails to load (e.g. opened via file:// instead of a local server) -->
+<div id="data-warning" class="no-print hidden bg-[var(--color-surface)] border-b border-token text-xs text-muted px-4 py-2 text-center">
+  Couldn't load <code>tattoos.json</code> over <code>file://</code> — showing bundled sample data instead. Serve this folder with a local server (e.g. <code>python -m http.server</code>) to edit the catalog live.
+</div>
+
+<main class="max-w-7xl mx-auto">
+
+<!-- =========================================================
+     A. HOME VIEW
+========================================================= -->
+<section id="home-view" class="view active transition-view">
+
+  <!-- Hero -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center px-4 sm:px-6 lg:px-8 pt-14 pb-20">
+    <div>
+      <p class="text-sm font-medium text-muted mb-3">Custom tattoo studio · New York, NY · By appointment</p>
+      <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05] mb-5">
+        Original artwork,<br class="hidden sm:block" /> permanently placed.
+      </h1>
+      <p class="text-base text-muted max-w-md mb-8">
+        Browse the portfolio, choose a piece or bring your own concept, and book a
+        session in a few simple steps — in our Lower East Side studio, or wherever you are.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <button onclick="scrollToSection('gallery-section')" class="btn-primary rounded-md px-6 py-3 text-sm font-semibold">Browse the gallery</button>
+        <button onclick="scrollToSection('home-service-section')" class="btn-outline rounded-md px-6 py-3 text-sm font-semibold">We come to you</button>
+      </div>
+      <div class="flex gap-8 mt-10 text-sm">
+        <div><p class="text-2xl font-semibold stat-number">12</p><p class="text-muted">years tattooing</p></div>
+        <div><p class="text-2xl font-semibold stat-number">400+</p><p class="text-muted">pieces completed</p></div>
+        <div><p class="text-2xl font-semibold stat-number">4.9</p><p class="text-muted">average rating</p></div>
+      </div>
+    </div>
+
+    <div class="aspect-[4/5] w-full rounded-lg overflow-hidden border border-token bg-surface flex items-center justify-center p-14 text-[var(--color-text)]">
+      <div class="art-icon w-full h-full opacity-90" id="hero-art"></div>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  <div id="gallery-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token">
+    <div class="flex items-end justify-between mb-8 gap-4 flex-wrap">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight">Available designs</h2>
+        <p class="text-muted text-sm mt-1">Select a piece to see sizing, pricing, and availability.</p>
+      </div>
+      <div id="style-filters" class="flex gap-2 text-sm flex-wrap">
+        <button class="filter-btn active border border-token rounded-md px-3 py-1.5" data-filter="All">All</button>
+      </div>
+    </div>
+
+    <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <p class="text-sm text-muted col-span-full">Loading catalog…</p>
+    </div>
+  </div>
+
+  <!-- Our Previous Work -->
+  <div id="portfolio-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token bg-surface">
+    <h2 class="text-2xl font-semibold tracking-tight mb-2">Our previous work</h2>
+    <p class="text-muted text-sm mb-10 max-w-md">A look at recently completed, fully healed pieces — separate from the bookable gallery above.</p>
+    <div id="portfolio-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+  </div>
+
+  <!-- How booking works -->
+  <div id="process-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token">
+    <h2 class="text-2xl font-semibold tracking-tight mb-2">How booking works</h2>
+    <p class="text-muted text-sm mb-10 max-w-md">Four steps from browsing to getting tattooed — the same flow whether you come to the studio or book home service.</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="border border-token rounded-lg p-5 bg-surface card-hover">
+        <div class="w-10 h-10 rounded-full bg-[var(--color-bg)] border border-token flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M18 10.5a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-muted mb-3">Step 1</p>
+        <p class="font-medium mb-2">Explore the gallery</p>
+        <p class="text-sm text-muted">Browse available designs, styles, and sizing. Every piece shows a starting price up front.</p>
+      </div>
+      <div class="border border-token rounded-lg p-5 bg-surface card-hover">
+        <div class="w-10 h-10 rounded-full bg-[var(--color-bg)] border border-token flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-muted mb-3">Step 2</p>
+        <p class="font-medium mb-2">Choose your session</p>
+        <p class="text-sm text-muted">Pick a size, then decide between the studio in New York or home service anywhere in the world.</p>
+      </div>
+      <div class="border border-token rounded-lg p-5 bg-surface card-hover">
+        <div class="w-10 h-10 rounded-full bg-[var(--color-bg)] border border-token flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 8.25v10.5a1.5 1.5 0 001.5 1.5h16.5a1.5 1.5 0 001.5-1.5V8.25M2.25 8.25V6a1.5 1.5 0 011.5-1.5h16.5A1.5 1.5 0 0121.75 6v2.25m-15 4.5h3"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-muted mb-3">Step 3</p>
+        <p class="font-medium mb-2">Secure your date</p>
+        <p class="text-sm text-muted">Confirm the total, add your details, and pay a $50 deposit to hold the appointment.</p>
+      </div>
+      <div class="border border-token rounded-lg p-5 bg-surface card-hover">
+        <div class="w-10 h-10 rounded-full bg-[var(--color-bg)] border border-token flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-muted mb-3">Step 4</p>
+        <p class="font-medium mb-2">Get tattooed</p>
+        <p class="text-sm text-muted">Show up (or let the artist come to you), pay the remaining balance, and walk away with the piece.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Home Service -->
+  <div id="home-service-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight mb-4">Home service — anywhere in the world</h2>
+        <p class="text-muted max-w-md mb-6">
+          Prefer to get tattooed at home, in your hotel room, or on set? The
+          artist travels with a fully sterile, single-use setup. Available
+          worldwide — choose it from any design's detail page.
+        </p>
+        <ul class="space-y-3 text-sm mb-8">
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.556-3.4 8.32-7.8 8.917a1.5 1.5 0 01-.4 0C8.4 20.32 5 16.556 5 12V6.741a1.5 1.5 0 011.05-1.43l5.25-1.68a1.5 1.5 0 01.9 0l5.25 1.68A1.5 1.5 0 0121 6.741V12z"/></svg><span>Fully portable, hospital-grade sterile equipment</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg><span>Available in New York at no added travel fee</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18"/></svg><span>Elsewhere in the U.S. or internationally — a travel fee applies, calculated at booking</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-3.4 8.32-7.8 8.917M21 12c0-4.556-3.4-8.32-7.8-8.917M3 12c0 4.556 3.4 8.32 7.8 8.917M3 12c0-4.556 3.4-8.32 7.8-8.917"/></svg><span>Same consultation, sizing, and aftercare support as an in-studio session</span></li>
+        </ul>
+        <button onclick="scrollToSection('gallery-section')" class="btn-primary rounded-md px-6 py-3 text-sm font-semibold">Choose a design to book</button>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="aspect-square rounded-lg border border-token bg-surface flex flex-col items-center justify-center gap-2 p-4 text-center card-hover">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.97-4.418-8-8.13-8-11.5A8 8 0 1120 9.5c0 3.37-3.03 7.082-8 11.5z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <p class="text-xs font-medium">In New York</p>
+          <p class="text-xs text-muted">No travel fee</p>
+        </div>
+        <div class="aspect-square rounded-lg border border-token bg-surface flex flex-col items-center justify-center gap-2 p-4 text-center card-hover">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h.055M17.418 20.144a9 9 0 01-14.836-6.144M9 21.615a9 9 0 006.144-14.759"/><circle cx="12" cy="12" r="9"/></svg>
+          <p class="text-xs font-medium">Rest of the U.S.</p>
+          <p class="text-xs text-muted">+$200 travel fee</p>
+        </div>
+        <div class="aspect-square rounded-lg border border-token bg-surface flex flex-col items-center justify-center gap-2 p-4 text-center col-span-2 card-hover">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18"/></svg>
+          <p class="text-xs font-medium">International</p>
+          <p class="text-xs text-muted">+$1,200 travel fee</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meet the Artist -->
+  <div id="artist-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token bg-surface">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+      <div class="lg:col-span-1">
+        <div class="aspect-square rounded-lg border border-token bg-[var(--color-bg)] flex items-center justify-center p-12">
+          <div class="art-icon w-full h-full opacity-90" id="artist-art"></div>
+        </div>
+      </div>
+      <div class="lg:col-span-2">
+        <h2 class="text-2xl font-semibold tracking-tight mb-4">Meet the artist</h2>
+        <p class="text-muted mb-4 max-w-xl">
+          Twelve years behind the needle, specializing in fine line, blackwork,
+          and traditional color. Trained through a formal apprenticeship before
+          opening Bare Skin Studio, with a focus on custom pieces built around
+          a real consultation rather than off-the-wall flash.
+        </p>
+        <p class="text-muted mb-6 max-w-xl">
+          Work has been featured in a handful of regional tattoo conventions,
+          and a portion of every guest-artist weekend goes toward hosting
+          emerging local artists in the space.
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm">
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+            <p class="text-xl font-semibold stat-number">12</p><p class="text-muted">years experience</p>
+          </div>
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42"/></svg>
+            <p class="text-xl font-semibold stat-number">400+</p><p class="text-muted">pieces completed</p>
+          </div>
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zM18.75 6.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14.653 5.653a4.5 4.5 0 106.32 6.32l-2.107-2.106a1.5 1.5 0 00-1.06-.44H16.5v-1.306a1.5 1.5 0 00-.44-1.06l-1.407-1.408z"/></svg>
+            <p class="text-xl font-semibold stat-number">6</p><p class="text-muted">styles offered</p>
+          </div>
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18"/></svg>
+            <p class="text-xl font-semibold stat-number">30+</p><p class="text-muted">countries served (home service)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Studio & Safety -->
+  <div class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight mb-4">About the studio</h2>
+        <p class="text-muted mb-4 max-w-md">
+          A private, appointment-only studio specializing in fine line and
+          custom blackwork, based on the Lower East Side of Manhattan. Every
+          piece starts as a one-on-one consultation so the design fits the
+          body and the client, not a flash sheet.
+        </p>
+        <ul class="space-y-2 text-sm">
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.556-3.4 8.32-7.8 8.917a1.5 1.5 0 01-.4 0C8.4 20.32 5 16.556 5 12V6.741a1.5 1.5 0 011.05-1.43l5.25-1.68a1.5 1.5 0 01.9 0l5.25 1.68A1.5 1.5 0 0121 6.741V12z"/></svg><span><span class="font-medium">Licensed —</span> <span class="text-muted">New York State Board of Health, credential on request</span></span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35"/></svg><span><span class="font-medium">Certified —</span> <span class="text-muted">Bloodborne pathogens, first aid/CPR</span></span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg><span><span class="font-medium">Guest artists —</span> <span class="text-muted">Hosted quarterly, announced by email</span></span></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight mb-4">Hygiene & safety standards</h2>
+        <ul class="space-y-3 text-sm">
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Single-use needles, opened at the station in front of you</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Hospital-grade autoclave sterilization for all reusable tools</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Surface barriers replaced between every client</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Medical-grade ink sourced from regulated suppliers</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Written aftercare guidance provided with every session</span></li>
+          <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>The same sterile protocol travels with home service bookings</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testimonials -->
+  <div class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token bg-surface">
+    <h2 class="text-2xl font-semibold tracking-tight mb-8">What clients say</h2>
+    <div id="testimonial-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+
+  <!-- FAQ -->
+  <div id="faq-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token">
+    <h2 class="text-2xl font-semibold tracking-tight mb-8">Frequently asked questions</h2>
+    <div class="max-w-3xl divide-y divide-token border-t border-b border-token">
+      <details class="group py-5">
+        <summary class="cursor-pointer flex items-center justify-between font-medium">
+          Is the $50 deposit refundable?
+          <svg class="chev w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <p class="text-sm text-muted mt-3">The deposit confirms your slot and comes off the final price. It's non-refundable within 48 hours of the appointment, but freely reschedulable with more notice than that.</p>
+      </details>
+      <details class="group py-5">
+        <summary class="cursor-pointer flex items-center justify-between font-medium">
+          How does the home service travel fee work?
+          <svg class="chev w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <p class="text-sm text-muted mt-3">In-New-York home service has no added fee. Elsewhere in the U.S. adds a flat $200. International bookings add a flat $1,200. It's calculated automatically once you enter your address.</p>
+      </details>
+      <details class="group py-5">
+        <summary class="cursor-pointer flex items-center justify-between font-medium">
+          Can I customize one of the gallery designs?
+          <svg class="chev w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <p class="text-sm text-muted mt-3">Yes — gallery pieces are a starting point. Mention your changes in the special instructions field at checkout and they'll be worked into the pre-session consultation.</p>
+      </details>
+      <details class="group py-5">
+        <summary class="cursor-pointer flex items-center justify-between font-medium">
+          Do you tattoo minors?
+          <svg class="chev w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <p class="text-sm text-muted mt-3">No — clients must be 18 or older with valid government ID, no exceptions, matching New York State law.</p>
+      </details>
+      <details class="group py-5">
+        <summary class="cursor-pointer flex items-center justify-between font-medium">
+          What if I need a touch-up later?
+          <svg class="chev w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <p class="text-sm text-muted mt-3">Free touch-ups are included within 60 days of the original session for studio appointments; home service touch-ups are subject to the same travel fee structure.</p>
+      </details>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div id="contact-section" class="reveal px-4 sm:px-6 lg:px-8 py-16 border-t border-token">
+    <h2 class="text-2xl font-semibold tracking-tight mb-8">Get in touch</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+      <form id="contact-form" class="space-y-4" onsubmit="event.preventDefault(); submitContactForm();">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Name</label>
+          <input id="contact-name" type="text" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Email</label>
+          <input id="contact-email" type="email" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Placement concept</label>
+          <input id="contact-placement" type="text" placeholder="e.g. forearm, ribs, full sleeve" class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Message</label>
+          <textarea id="contact-message" rows="4" required class="w-full border border-token rounded-md px-3 py-2.5"></textarea>
+        </div>
+        <button type="submit" class="btn-primary rounded-md px-6 py-2.5 text-sm font-semibold">Send message</button>
+        <p id="contact-confirm" class="hidden text-sm text-muted">Thanks — your message has been sent. We'll get back to you shortly.</p>
+        <p id="contact-error" class="hidden text-sm" style="color:var(--color-danger)">Something went wrong sending your message — please try again, or email us directly.</p>
+      </form>
+
+      <div class="rounded-lg border border-token bg-surface aspect-[4/3] md:aspect-auto flex flex-col items-center justify-center text-muted text-sm gap-3 p-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+        <span>Map placeholder — studio location</span>
+        <span class="font-medium text-[var(--color-text)]">118 Orchard St, New York, NY 10002</span>
+        <div class="flex flex-col gap-2 text-xs mt-2">
+          <span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a1.5 1.5 0 001.5-1.5v-2.895a1.5 1.5 0 00-1.135-1.455l-3.86-1.05a1.5 1.5 0 00-1.6.472l-1.02 1.32c-1.06-.406-3.14-1.63-4.9-3.39-1.76-1.76-2.984-3.84-3.39-4.9l1.32-1.02a1.5 1.5 0 00.472-1.6l-1.05-3.86A1.5 1.5 0 006.395 2.25H3.75a1.5 1.5 0 00-1.5 1.5v3z"/></svg>(212) 555-0148</span>
+          <span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>book@bareskinstudio.com</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="px-4 sm:px-6 lg:px-8 py-10 border-t border-token text-sm text-muted flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <p>© <span id="year"></span> Bare Skin Studio. All rights reserved.</p>
+      <p>New York, NY · Open Tue–Sat, by appointment only.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="#" onclick="return false;" aria-label="Instagram" class="w-9 h-9 rounded-full border border-token flex items-center justify-center hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+      </a>
+      <a href="#" onclick="return false;" aria-label="TikTok" class="w-9 h-9 rounded-full border border-token flex items-center justify-center hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M14 4v10.5a3.5 3.5 0 11-3.5-3.5c.313 0 .616.037.905.107M14 4a4.5 4.5 0 004.5 4.5"/></svg>
+      </a>
+    </div>
+  </footer>
+</section>
+
+<!-- =========================================================
+     C. TATTOO DETAIL VIEW
+========================================================= -->
+<section id="detail-view" class="view transition-view px-4 sm:px-6 lg:px-8 py-12">
+  <button onclick="showView('home-view')" class="text-sm text-muted hover:text-[var(--color-text)] mb-8 flex items-center gap-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+    Back to gallery
+  </button>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+    <!-- Left: image gallery -->
+    <div>
+      <div id="detail-main-image" class="aspect-square rounded-lg overflow-hidden border border-token bg-surface mb-3 art-icon flex items-center justify-center p-10"></div>
+      <div id="detail-thumbnails" class="grid grid-cols-4 gap-3"></div>
+    </div>
+
+    <!-- Right: info -->
+    <div>
+      <p id="detail-style" class="text-sm font-medium text-muted mb-2"></p>
+      <h1 id="detail-title" class="text-3xl font-semibold tracking-tight mb-4"></h1>
+      <p id="detail-description" class="text-muted mb-6"></p>
+
+      <div class="border-t border-b border-token py-5 mb-6 space-y-4">
+        <div class="flex justify-between text-sm">
+          <span class="text-muted flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>Estimated duration</span>
+          <span id="detail-duration" class="font-medium"></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-muted flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Starting price</span>
+          <span id="detail-base-price" class="font-medium"></span>
+        </div>
+      </div>
+
+      <p class="text-sm font-medium mb-3">Size</p>
+      <div id="detail-size-selector" class="flex flex-wrap gap-2 mb-6"></div>
+
+      <div class="flex justify-between items-center rounded-md bg-surface px-4 py-3 mb-6">
+        <span class="text-sm font-medium">Total for selected size</span>
+        <span id="detail-total-price" class="text-lg font-semibold"></span>
+      </div>
+
+      <details class="mb-8 border border-token rounded-md">
+        <summary class="cursor-pointer px-4 py-3 text-sm font-medium">Aftercare requirements</summary>
+        <p id="detail-aftercare" class="px-4 pb-4 text-sm text-muted"></p>
+      </details>
+
+      <button onclick="proceedToServiceChoice()" class="btn-primary w-full sm:w-auto rounded-md px-8 py-3 text-sm font-semibold">Continue</button>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     C.5 HOME SERVICE OR COME-TO-SHOP CHOICE VIEW
+========================================================= -->
+<section id="service-view" class="view transition-view px-4 sm:px-6 lg:px-8 py-12">
+  <button onclick="showView('detail-view')" class="text-sm text-muted hover:text-[var(--color-text)] mb-8 flex items-center gap-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+    Back to design
+  </button>
+
+  <h1 class="text-2xl font-semibold tracking-tight mb-2">How would you like your session?</h1>
+  <p class="text-muted text-sm mb-8">Come to the studio in New York, or have the artist travel to you.</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div id="option-shop" onclick="selectServiceType('shop')" class="option-card card-hover border border-token rounded-lg p-6">
+      <p class="font-semibold mb-1">Come to the shop</p>
+      <p class="text-sm text-muted">118 Orchard St, New York, NY 10002. No travel fee.</p>
+    </div>
+    <div id="option-home" onclick="selectServiceType('home')" class="option-card card-hover border border-token rounded-lg p-6">
+      <p class="font-semibold mb-1">Home service</p>
+      <p class="text-sm text-muted">The artist comes to you, anywhere in the world. Travel fee calculated below.</p>
+    </div>
+  </div>
+
+  <!-- Shop panel -->
+  <div id="shop-panel" class="hidden border border-token rounded-lg p-6 mb-8">
+    <p class="text-sm font-medium mb-1">Studio address</p>
+    <p class="text-sm text-muted mb-6">118 Orchard St, New York, NY 10002 — arrive 10 minutes before your appointment.</p>
+    <button onclick="confirmShopService()" class="btn-primary rounded-md px-6 py-3 text-sm font-semibold">See total price</button>
+  </div>
+
+  <!-- Home service panel -->
+  <div id="home-panel" class="hidden border border-token rounded-lg p-6 mb-8">
+    <form id="home-service-form" onsubmit="event.preventDefault(); confirmHomeService();" class="space-y-5">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Street address</label>
+        <input id="hs-address" type="text" required class="w-full border border-token rounded-md px-3 py-2.5" />
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">City</label>
+          <input id="hs-city" type="text" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div id="hs-state-wrap">
+          <label class="block text-sm font-medium mb-1.5">State</label>
+          <input id="hs-state" type="text" placeholder="e.g. New York" class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">ZIP / postal code</label>
+          <input id="hs-zip" type="text" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Country</label>
+          <select id="hs-country" onchange="onCountryChange()" class="w-full border border-token rounded-md px-3 py-2.5">
+            <option value="us">United States</option>
+            <option value="intl">Other (international)</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary rounded-md px-6 py-3 text-sm font-semibold">Calculate & see total price</button>
+    </form>
+  </div>
+</section>
+
+<!-- =========================================================
+     D. BILLING VIEW
+========================================================= -->
+<section id="billing-view" class="view transition-view px-4 sm:px-6 lg:px-8 py-12">
+  <button onclick="showView('service-view')" class="text-sm text-muted hover:text-[var(--color-text)] mb-8 flex items-center gap-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+    Back to service selection
+  </button>
+
+  <h1 class="text-2xl font-semibold tracking-tight mb-8">Your details</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+    <!-- Left: customer info form -->
+    <form id="billing-form" onsubmit="event.preventDefault(); proceedToPayment();" class="lg:col-span-2 space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Full name</label>
+          <input id="billing-name" type="text" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Email</label>
+          <input id="billing-email" type="email" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Phone number</label>
+          <input id="billing-phone" type="tel" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Appointment date & time</label>
+          <input id="billing-datetime" type="datetime-local" required class="w-full border border-token rounded-md px-3 py-2.5" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Special instructions</label>
+        <textarea id="billing-notes" rows="4" placeholder="Allergies, placement notes, reference images, etc." class="w-full border border-token rounded-md px-3 py-2.5"></textarea>
+      </div>
+      <button type="submit" class="btn-primary rounded-md px-8 py-3 text-sm font-semibold hidden lg:inline-block">Proceed to payment</button>
+    </form>
+
+    <!-- Right: order summary -->
+    <aside class="border border-token rounded-lg p-5 h-fit">
+      <h2 class="text-sm font-semibold mb-4">Order summary</h2>
+      <div class="flex gap-3 mb-4">
+        <div id="summary-thumb" class="w-16 h-16 rounded-md overflow-hidden border border-token bg-surface shrink-0 art-icon p-2"></div>
+        <div>
+          <p id="summary-title" class="text-sm font-medium leading-tight"></p>
+          <p id="summary-size" class="text-xs text-muted mt-1"></p>
+          <p id="summary-service" class="text-xs text-muted"></p>
+        </div>
+      </div>
+      <div class="border-t border-token pt-4 space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-muted">Item total</span><span id="summary-item-total"></span></div>
+        <div id="summary-fee-row" class="flex justify-between"><span class="text-muted">Travel fee</span><span id="summary-fee"></span></div>
+        <div class="flex justify-between"><span class="text-muted">Deposit (due now)</span><span id="summary-deposit"></span></div>
+        <div class="flex justify-between"><span class="text-muted">Balance at appointment</span><span id="summary-balance"></span></div>
+      </div>
+      <div class="border-t border-token mt-4 pt-4 flex justify-between font-semibold">
+        <span>Total</span><span id="summary-total"></span>
+      </div>
+      <button onclick="document.getElementById('billing-form').requestSubmit()" class="btn-primary w-full rounded-md px-6 py-3 text-sm font-semibold mt-6">Proceed to payment</button>
+    </aside>
+  </div>
+</section>
+
+<!-- =========================================================
+     E. PAYMENT VIEW
+========================================================= -->
+<section id="payment-view" class="view transition-view px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-md mx-auto">
+    <button onclick="showView('billing-view')" class="text-sm text-muted hover:text-[var(--color-text)] mb-8 flex items-center gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+      Back to your details
+    </button>
+
+    <div class="border border-token rounded-lg p-6">
+      <h1 class="text-xl font-semibold tracking-tight mb-6">Pay deposit</h1>
+
+      <!-- Method tabs -->
+      <div class="grid grid-cols-3 gap-2 mb-6 text-sm">
+        <button type="button" onclick="selectPaymentMethod('card')" data-method="card" class="payment-tab border border-token rounded-md py-2.5 font-medium">Card</button>
+        <button type="button" onclick="selectPaymentMethod('wallet')" data-method="wallet" class="payment-tab border border-token rounded-md py-2.5 font-medium">Apple/Google Pay</button>
+        <button type="button" onclick="selectPaymentMethod('crypto')" data-method="crypto" class="payment-tab border border-token rounded-md py-2.5 font-medium">Crypto</button>
+      </div>
+
+      <form id="payment-form" onsubmit="event.preventDefault(); confirmPayment();">
+        <div id="card-fields" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1.5">Cardholder name</label>
+            <input type="text" required class="w-full border border-token rounded-md px-3 py-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5">Card number</label>
+            <input type="text" inputmode="numeric" placeholder="•••• •••• •••• ••••" required class="w-full border border-token rounded-md px-3 py-2.5" />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1.5">Expiration date</label>
+              <input type="text" placeholder="MM / YY" required class="w-full border border-token rounded-md px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1.5">Security code</label>
+              <input type="text" inputmode="numeric" placeholder="CVV" required class="w-full border border-token rounded-md px-3 py-2.5" />
+            </div>
+          </div>
+        </div>
+
+        <div id="wallet-fields" class="hidden text-sm text-muted border border-dashed border-token rounded-md p-6 text-center">
+          You'll be prompted by your device's wallet to confirm.
+        </div>
+
+        <div id="crypto-fields" class="hidden text-sm text-muted border border-dashed border-token rounded-md p-6 text-center">
+          A payment address and QR code will be generated on the next step.
+        </div>
+
+        <div class="border-t border-token mt-6 pt-4 flex justify-between text-sm">
+          <span class="text-muted">Deposit due now</span>
+          <span id="payment-total" class="font-semibold"></span>
+        </div>
+
+        <button type="submit" class="btn-primary w-full rounded-md px-6 py-3 text-sm font-semibold mt-6">Confirm & pay deposit</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     F. RECEIPT VIEW
+========================================================= -->
+<section id="receipt-view" class="view transition-view px-4 sm:px-6 lg:px-8 py-12">
+  <div id="receipt-card" class="max-w-2xl mx-auto border border-token rounded-lg p-8">
+
+    <!-- Confirmation header -->
+    <div class="flex items-start justify-between mb-8 pb-8 border-b border-token">
+      <div>
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-surface border border-token mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+          Booking confirmed
+        </span>
+        <h1 class="text-2xl font-semibold tracking-tight">Thanks — you're booked.</h1>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-muted">Reference</p>
+        <p id="receipt-ref" class="font-mono text-sm font-medium"></p>
+      </div>
+    </div>
+
+    <!-- Metadata grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8 pb-8 border-b border-token text-sm">
+      <div>
+        <p class="text-xs font-semibold text-muted mb-2">Customer</p>
+        <p id="receipt-customer-name" class="font-medium"></p>
+        <p id="receipt-customer-email" class="text-muted"></p>
+        <p id="receipt-customer-phone" class="text-muted"></p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-muted mb-2">Appointment</p>
+        <p id="receipt-location-label" class="font-medium">Bare Skin Studio — Lower East Side, New York, NY</p>
+        <p id="receipt-datetime" class="text-muted"></p>
+      </div>
+    </div>
+
+    <!-- Line items -->
+    <table class="w-full text-sm mb-8">
+      <thead>
+        <tr class="text-left text-muted border-b border-token">
+          <th class="font-medium pb-2">Item</th>
+          <th class="font-medium pb-2 text-right">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="receipt-line-items" class="divide-y divide-token"></tbody>
+      <tfoot>
+        <tr class="border-t border-token">
+          <td class="pt-3 font-semibold">Total value</td>
+          <td id="receipt-total" class="pt-3 font-semibold text-right"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- QR + actions -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4">
+      <div class="w-28 h-28 border border-token rounded-md flex items-center justify-center text-xs text-muted text-center bg-surface shrink-0">
+        QR check-in code
+      </div>
+      <div class="flex gap-3 no-print">
+        <button onclick="window.print()" class="btn-outline rounded-md px-5 py-2.5 text-sm font-semibold">Print receipt</button>
+        <button onclick="resetAndGoHome()" class="btn-primary rounded-md px-5 py-2.5 text-sm font-semibold">Return to home</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- =========================================================
+     PRICE MODAL (shown after service selection)
+========================================================= -->
+<div id="price-modal" data-open="false" class="no-print fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+  <div class="modal-panel bg-[var(--color-bg)] rounded-lg border border-token max-w-sm w-full p-6">
+    <h2 class="text-lg font-semibold tracking-tight mb-1">Total price</h2>
+    <p id="modal-service-label" class="text-sm text-muted mb-6"></p>
+
+    <div class="space-y-2 text-sm mb-4">
+      <div class="flex justify-between"><span class="text-muted">Design & size</span><span id="modal-item-total"></span></div>
+      <div id="modal-fee-row" class="flex justify-between"><span class="text-muted">Travel fee</span><span id="modal-fee"></span></div>
+    </div>
+    <div class="border-t border-token pt-4 flex justify-between font-semibold mb-6">
+      <span>Total</span><span id="modal-total"></span>
+    </div>
+    <p class="text-xs text-muted mb-6">A $50 deposit is due now to confirm the booking; the remainder is due at the appointment.</p>
+
+    <div class="flex gap-3">
+      <button onclick="closePriceModal()" class="btn-outline rounded-md px-4 py-2.5 text-sm font-semibold flex-1">Edit selection</button>
+      <button onclick="confirmModalProceed()" class="btn-primary rounded-md px-4 py-2.5 text-sm font-semibold flex-1">Proceed to billing</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   IMAGES
+   Each design in tattoos.json carries an editable "images"
+   array — edit those paths directly to point at your own
+   photos (main shot first, then up to 3 alt-angle photos,
+   used as the "other views" thumbnails on the detail page).
+   If a path 404s, handleImageError() swaps that spot back to
+   the line-art placeholder automatically — nothing breaks
+   while you're still filling in photos.
+========================================================= */
+function handleImageError(imgEl, artKey){
+  const wrapper = imgEl.closest(".art-icon");
+  if (!wrapper) return;
+  wrapper.classList.add("p-6");
+  wrapper.innerHTML = tattooArt(artKey);
+}
+
+function mediaTag(src, alt, artKey){
+  return `<img src="${src}" alt="${alt}" loading="lazy" onerror="handleImageError(this, '${artKey}')" style="width:100%;height:100%;object-fit:cover;" />`;
+}
+
+/* =========================================================
+   ART LIBRARY — original line-art placeholders standing in
+   for real tattoo photography until a matching local image
+   is available. Uses currentColor / theme variables so it
+   follows the site's re-skinning tokens.
+========================================================= */
+function tattooArt(key){
+  const arts = {
+    botanical: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 180 C60 140,40 110,70 90 C100 70,80 40,100 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M70 90 C55 80,45 85,40 100" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M100 60 C115 50,125 55,130 70" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M85 35 C95 28,102 30,105 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="100" cy="20" r="4" fill="currentColor"/>
+    </svg>`,
+    geometric: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="100,20 170,150 30,150" stroke="currentColor" stroke-width="2"/>
+      <line x1="100" y1="20" x2="100" y2="150" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="65" y1="85" x2="135" y2="85" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="100" cy="85" r="7" stroke="currentColor" stroke-width="1.5"/>
+    </svg>`,
+    koi: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 100 C60 60,120 55,150 80 C165 90,165 110,150 120 C120 145,60 140,40 100 Z" fill="var(--color-accent)" fill-opacity="0.12" stroke="currentColor" stroke-width="2"/>
+      <path d="M150 80 L182 58 L166 100 L182 142 L150 120" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="65" cy="95" r="3" fill="currentColor"/>
+      <path d="M70 105 C90 118,110 118,130 105" stroke="currentColor" stroke-width="1.5"/>
+    </svg>`,
+    portrait: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M60 150 C55 120,60 90,80 70 C95 55,120 55,130 70 C138 82,132 90,140 95 C148 100,142 108,132 108 C128 118,132 128,120 132 C118 145,100 150,90 145 C80 160,65 165,60 150 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="100" cy="88" r="2.5" fill="currentColor"/>
+    </svg>`,
+    anchor: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="50" r="14" stroke="currentColor" stroke-width="3"/>
+      <line x1="100" y1="64" x2="100" y2="150" stroke="currentColor" stroke-width="3"/>
+      <line x1="70" y1="90" x2="130" y2="90" stroke="currentColor" stroke-width="3"/>
+      <path d="M60 130 C60 160,90 170,100 150" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <path d="M140 130 C140 160,110 170,100 150" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    </svg>`,
+    colorsleeve: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="70" cy="70" r="26" fill="var(--color-accent)" fill-opacity="0.12" stroke="currentColor" stroke-width="2"/>
+      <circle cx="122" cy="112" r="20" fill="var(--color-accent)" fill-opacity="0.12" stroke="currentColor" stroke-width="2"/>
+      <circle cx="90" cy="150" r="16" fill="var(--color-accent)" fill-opacity="0.12" stroke="currentColor" stroke-width="2"/>
+      <path d="M70 44 C75 30,65 20,70 10" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M50 55 C35 50,25 60,20 50" stroke="currentColor" stroke-width="1.5"/>
+    </svg>`,
+    script: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="100" y="108" text-anchor="middle" font-family="'Segoe Script','Brush Script MT',cursive" font-size="30" fill="currentColor">forever</text>
+    </svg>`,
+    mandala: (() => {
+      let dots = "";
+      const rings = [30, 50, 70];
+      rings.forEach((r, ri) => {
+        const count = 8 + ri * 4;
+        for (let i = 0; i < count; i++){
+          const angle = (i / count) * Math.PI * 2;
+          const x = 100 + r * Math.cos(angle);
+          const y = 100 + r * Math.sin(angle);
+          dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="currentColor"/>`;
+        }
+      });
+      return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="6" fill="currentColor"/>
+        ${dots}
+      </svg>`;
+    })(),
+    rose: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M100 40 C80 40,70 55,70 70 C70 85,85 95,100 90 C115 95,130 85,130 70 C130 55,120 40,100 40 Z" stroke="currentColor" stroke-width="2"/>
+      <path d="M100 90 C95 100,90 105,100 115 C110 105,105 100,100 90 Z" stroke="currentColor" stroke-width="2"/>
+      <line x1="100" y1="115" x2="100" y2="180" stroke="currentColor" stroke-width="2"/>
+      <path d="M100 140 C110 135,120 140,122 130" stroke="currentColor" stroke-width="2"/>
+      <path d="M100 155 C90 150,80 155,78 145" stroke="currentColor" stroke-width="2"/>
+    </svg>`,
+    wave: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 110 C50 90,70 130,100 110 C130 90,150 130,180 110" stroke="currentColor" stroke-width="2"/>
+      <path d="M20 130 C50 110,70 150,100 130 C130 110,150 150,180 130" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+      <path d="M40 90 C45 80,50 80,55 90" stroke="currentColor" stroke-width="1.5"/>
+    </svg>`,
+    skull: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M70 80 C70 50,130 50,130 80 C130 100,120 105,120 120 L120 135 L80 135 L80 120 C80 105,70 100,70 80 Z" stroke="currentColor" stroke-width="2"/>
+      <circle cx="85" cy="85" r="7" stroke="currentColor" stroke-width="2"/>
+      <circle cx="115" cy="85" r="7" stroke="currentColor" stroke-width="2"/>
+      <path d="M95 100 L100 110 L105 100" stroke="currentColor" stroke-width="2"/>
+      <line x1="85" y1="135" x2="85" y2="145" stroke="currentColor" stroke-width="2"/>
+      <line x1="95" y1="135" x2="95" y2="148" stroke="currentColor" stroke-width="2"/>
+      <line x1="105" y1="135" x2="105" y2="148" stroke="currentColor" stroke-width="2"/>
+      <line x1="115" y1="135" x2="115" y2="145" stroke="currentColor" stroke-width="2"/>
+    </svg>`,
+    feather: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M100 20 C90 60,110 100,90 140 C80 160,95 175,100 180" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M100 30 C85 35,75 45,70 40" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M100 50 C82 55,70 65,64 60" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M97 70 C79 75,66 85,60 80" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M93 90 C75 96,62 106,55 100" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M100 30 C115 35,125 45,130 40" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M100 50 C118 55,130 65,136 60" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M97 70 C115 75,128 85,134 80" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M93 90 C111 96,124 106,131 100" stroke="currentColor" stroke-width="1.3"/>
+    </svg>`,
+  };
+  return arts[key] || arts.geometric;
+}
+
+// Returns the first image from the item's "images" array if present, else the SVG placeholder.
+// A broken/missing path falls back to the placeholder automatically via handleImageError().
+function tattooMedia(item){
+  const src = item.images && item.images[0];
+  if (src) return mediaTag(src, item.title, item.art);
+  return tattooArt(item.art);
+}
+
+/* =========================================================
+   CATALOG LOADING — reads /tattoos.json so titles and prices
+   can be edited without touching this file. Falls back to a
+   bundled copy if fetch is blocked (e.g. opened via file://).
+========================================================= */
+const FALLBACK_TATTOOS = [
+  { id: 1, title: "Wandering Line Botanicals", style: "Fine Line", basePrice: 180, duration: "1.5–2 hrs", art: "botanical",
+    images: ["images/1-1.webp","images/1-2.webp","images/1-3.webp","images/1-4.webp"],
+    description: "A continuous single-line botanical motif, adaptable to almost any placement.",
+    aftercare: "Keep bandaged for 2–4 hours. Wash gently with fragrance-free soap, apply a thin layer of recommended ointment, and avoid direct sun or soaking for two weeks.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:60}, {label:"Large", mod:140} ] },
+  { id: 2, title: "Geometric Sleeve Panel", style: "Blackwork", basePrice: 320, duration: "3–4 hrs", art: "geometric",
+    images: ["images/2-1.webp","images/2-2.webp","images/2-3.webp","images/2-4.webp"],
+    description: "Bold geometric linework designed as a modular panel for larger sleeve pieces.",
+    aftercare: "Larger blackwork pieces take longer to heal — expect 3+ weeks. Avoid tight clothing over the area and skip the gym for 5–7 days.",
+    sizes: [ {label:"Medium", mod:0}, {label:"Large", mod:120}, {label:"Sleeve", mod:400} ] },
+  { id: 3, title: "Watercolor Koi", style: "Color", basePrice: 260, duration: "2.5–3 hrs", art: "koi",
+    images: ["images/3-1.webp","images/3-2.webp","images/3-3.webp","images/3-4.webp"],
+    description: "Soft color blending around a traditional koi silhouette.",
+    aftercare: "Color pieces are more sensitive to sun fading — use SPF 30+ once healed, and moisturize daily for the first month.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:80}, {label:"Large", mod:180} ] },
+  { id: 4, title: "Minimalist Line Portrait", style: "Fine Line", basePrice: 150, duration: "1–1.5 hrs", art: "portrait",
+    images: ["images/4-1.webp","images/4-2.webp","images/4-3.webp","images/4-4.webp"],
+    description: "A simplified single-line portrait or figure, sized for wrist, ankle, or ribs.",
+    aftercare: "Fine line work is delicate while healing — avoid exfoliating the area for 3 weeks and keep it out of direct sun.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:40} ] },
+  { id: 5, title: "Traditional Anchor & Rope", style: "Blackwork", basePrice: 200, duration: "2 hrs", art: "anchor",
+    images: ["images/5-1.webp","images/5-2.webp","images/5-3.webp","images/5-4.webp"],
+    description: "Bold traditional linework with solid black fill, built to age well over decades.",
+    aftercare: "Solid black fill can scab more visibly — do not pick. Keep moisturized and out of chlorinated water for 2 weeks.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:50}, {label:"Large", mod:110} ] },
+  { id: 6, title: "Botanical Color Sleeve", style: "Color", basePrice: 380, duration: "4+ hrs", art: "colorsleeve",
+    images: ["images/6-1.webp","images/6-2.webp","images/6-3.webp","images/6-4.webp"],
+    description: "A full-color botanical composition designed to wrap the forearm.",
+    aftercare: "Expect multiple healing stages over 4 weeks. Avoid direct sun for at least a month and follow the full written aftercare sheet provided at booking.",
+    sizes: [ {label:"Medium", mod:0}, {label:"Large", mod:150}, {label:"Sleeve", mod:420} ] },
+  { id: 7, title: "Single Needle Script", style: "Fine Line", basePrice: 120, duration: "45 min–1 hr", art: "script",
+    images: ["images/7-1.webp","images/7-2.webp","images/7-3.webp","images/7-4.webp"],
+    description: "Delicate single-needle script, custom-lettered from your text.",
+    aftercare: "Very fine work — avoid friction (bags, straps) over the area for 2 weeks and keep consistently moisturized.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:30} ] },
+  { id: 8, title: "Dotwork Mandala", style: "Blackwork", basePrice: 240, duration: "2.5 hrs", art: "mandala",
+    images: ["images/8-1.webp","images/8-2.webp","images/8-3.webp","images/8-4.webp"],
+    description: "Symmetrical dotwork mandala, built up in a single continuous session.",
+    aftercare: "Dotwork can appear textured while healing — this is normal. Avoid picking and moisturize twice daily.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:70}, {label:"Large", mod:160} ] },
+  { id: 9, title: "Traditional Rose & Dagger", style: "Traditional", basePrice: 220, duration: "2–2.5 hrs", art: "rose",
+    images: ["images/9-1.webp","images/9-2.webp","images/9-3.webp","images/9-4.webp"],
+    description: "Classic American traditional rose with bold outlines and solid color fill.",
+    aftercare: "Traditional color work scabs more visibly while healing — avoid picking, moisturize daily, and stay out of the sun for 3 weeks.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:65}, {label:"Large", mod:150} ] },
+  { id: 10, title: "Ocean Wave Micro", style: "Micro", basePrice: 90, duration: "30–45 min", art: "wave",
+    images: ["images/10-1.webp","images/10-2.webp","images/10-3.webp","images/10-4.webp"],
+    description: "A tiny single-line wave, popular as a first tattoo or an add-on piece.",
+    aftercare: "Very small pieces heal fast — keep clean and moisturized for about a week, avoid direct sun until fully healed.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:25} ] },
+  { id: 11, title: "Skull & Roses", style: "Blackwork", basePrice: 280, duration: "3 hrs", art: "skull",
+    images: ["images/11-1.webp","images/11-2.webp","images/11-3.webp","images/11-4.webp"],
+    description: "Bold blackwork skull surrounded by linework roses — a heavier statement piece.",
+    aftercare: "Dense blackwork can take up to 4 weeks to fully heal. Avoid swimming and direct sun during that time.",
+    sizes: [ {label:"Medium", mod:0}, {label:"Large", mod:130}, {label:"Sleeve", mod:380} ] },
+  { id: 12, title: "Feather Fine Line", style: "Fine Line", basePrice: 140, duration: "1–1.5 hrs", art: "feather",
+    images: ["images/12-1.webp","images/12-2.webp","images/12-3.webp","images/12-4.webp"],
+    description: "A detailed single-needle feather, commonly placed along the spine or forearm.",
+    aftercare: "Keep the area dry for the first few hours, then moisturize lightly. Avoid tight clothing rubbing the area for 2 weeks.",
+    sizes: [ {label:"Small", mod:0}, {label:"Medium", mod:45} ] },
+];
+
+let TATTOOS = [];
+const DEPOSIT_FLAT = 50;
+
+let state = {
+  selectedTattoo: null,
+  selectedSize: null,
+  serviceType: null,      // 'shop' | 'home'
+  serviceFee: 0,
+  serviceAddress: null,
+  customer: null,
+  paymentMethod: "card",
+  cartCount: 0,
+};
+
+let currentFilter = "All";
+
+async function loadCatalog(){
+  try{
+    const res = await fetch("./tattoos.json");
+    if (!res.ok) throw new Error("bad response");
+    TATTOOS = await res.json();
+  } catch(err){
+    TATTOOS = FALLBACK_TATTOOS;
+    document.getElementById("data-warning").classList.remove("hidden");
+  }
+  renderStyleFilters();
+  renderGallery();
+  document.getElementById("hero-art").innerHTML = tattooMedia(TATTOOS[0] || { id: 0, art: "botanical" });
+  document.getElementById("artist-art").innerHTML = tattooArt(TATTOOS[7 % TATTOOS.length]?.art || "mandala");
+}
+
+/* =========================================================
+   VIEW NAVIGATION
+========================================================= */
+function showView(id){
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({ top: 0 });
+}
+
+function scrollToSection(id){
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth" });
+}
+
+/* =========================================================
+   MOBILE NAV
+========================================================= */
+let mobileMenuOpen = false;
+function toggleMobileMenu(){
+  mobileMenuOpen = !mobileMenuOpen;
+  document.getElementById("mobile-nav").classList.toggle("hidden", !mobileMenuOpen);
+  document.getElementById("menu-icon-open").classList.toggle("hidden", mobileMenuOpen);
+  document.getElementById("menu-icon-close").classList.toggle("hidden", !mobileMenuOpen);
+  document.getElementById("mobile-menu-btn").setAttribute("aria-expanded", String(mobileMenuOpen));
+}
+function closeMobileMenu(){
+  mobileMenuOpen = false;
+  document.getElementById("mobile-nav").classList.add("hidden");
+  document.getElementById("menu-icon-open").classList.remove("hidden");
+  document.getElementById("menu-icon-close").classList.add("hidden");
+  document.getElementById("mobile-menu-btn").setAttribute("aria-expanded", "false");
+}
+
+function goToCartFlow(){
+  if (state.selectedTattoo && state.serviceType){
+    showView("billing-view");
+  } else if (state.selectedTattoo){
+    showView("service-view");
+  } else {
+    scrollToSection("gallery-section");
+  }
+}
+
+/* =========================================================
+   HOME — GALLERY RENDER + STYLE FILTERING
+========================================================= */
+function renderStyleFilters(){
+  const container = document.getElementById("style-filters");
+  const styles = ["All", ...new Set(TATTOOS.map(t => t.style))];
+  container.innerHTML = styles.map(s => `
+    <button onclick="setStyleFilter('${s.replace(/'/g, "\\'")}')" class="filter-btn ${s === currentFilter ? 'active' : ''} border border-token rounded-md px-3 py-1.5">${s}</button>
+  `).join("");
+}
+
+function setStyleFilter(style){
+  currentFilter = style;
+  renderStyleFilters();
+  renderGallery();
+}
+
+function renderGallery(){
+  const grid = document.getElementById("gallery-grid");
+  const items = currentFilter === "All" ? TATTOOS : TATTOOS.filter(t => t.style === currentFilter);
+
+  if (!items.length){
+    grid.innerHTML = `<p class="text-sm text-muted col-span-full">No designs in this style yet.</p>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(t => `
+    <div class="reveal card-hover border border-token rounded-lg overflow-hidden group flex flex-col">
+      <div class="aspect-square bg-surface art-icon flex items-center justify-center overflow-hidden ${(t.images && t.images[0]) ? '' : 'p-8'}">
+        ${tattooMedia(t)}
+      </div>
+      <div class="p-4 flex flex-col flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-medium text-muted">${t.style}</span>
+          <span class="text-xs font-medium">from $${t.basePrice}</span>
+        </div>
+        <h3 class="font-medium mb-4">${t.title}</h3>
+        <button onclick="openDetail(${t.id})" class="btn-outline rounded-md px-4 py-2 text-sm font-medium mt-auto">Explore details</button>
+      </div>
+    </div>
+  `).join("");
+  observeReveals();
+}
+
+/* =========================================================
+   OUR PREVIOUS WORK — portfolio showcase, separate from the
+   bookable gallery. Edit PORTFOLIO below to point at your own
+   completed-work photos; a missing photo falls back to art.
+========================================================= */
+const PORTFOLIO = [
+  { image: "images/portfolio/1.webp", art: "botanical", caption: "Fine line botanical, healed 6 weeks" },
+  { image: "images/portfolio/2.webp", art: "geometric", caption: "Geometric forearm panel" },
+  { image: "images/portfolio/3.webp", art: "koi",       caption: "Color koi, full session" },
+  { image: "images/portfolio/4.webp", art: "rose",      caption: "Traditional rose, fresh" },
+  { image: "images/portfolio/5.webp", art: "skull",     caption: "Blackwork skull & roses" },
+  { image: "images/portfolio/6.webp", art: "feather",   caption: "Fine line feather, spine" },
+  { image: "images/portfolio/7.webp", art: "mandala",   caption: "Dotwork mandala, shoulder" },
+  { image: "images/portfolio/8.webp", art: "colorsleeve", caption: "Color botanical sleeve" },
+];
+
+function renderPortfolio(){
+  const grid = document.getElementById("portfolio-grid");
+  if (!grid) return;
+  grid.innerHTML = PORTFOLIO.map(p => `
+    <div class="reveal card-hover border border-token rounded-lg overflow-hidden group">
+      <div class="aspect-square bg-[var(--color-bg)] art-icon flex items-center justify-center overflow-hidden p-6">
+        ${mediaTag(p.image, p.caption, p.art)}
+      </div>
+      <div class="px-3 py-2.5 text-xs text-muted">${p.caption}</div>
+    </div>
+  `).join("");
+  observeReveals();
+}
+
+/* =========================================================
+   DETAIL VIEW
+========================================================= */
+function openDetail(id){
+  const tattoo = TATTOOS.find(t => t.id === id);
+  state.selectedTattoo = tattoo;
+  state.selectedSize = tattoo.sizes[0];
+  state.serviceType = null;
+  state.serviceFee = 0;
+  state.serviceAddress = null;
+
+  const images = tattoo.images || [];
+  const hasPhoto = !!images[0];
+  const mainEl = document.getElementById("detail-main-image");
+  mainEl.classList.toggle("p-10", !hasPhoto);
+  mainEl.classList.toggle("p-0", hasPhoto);
+  setDetailMainImage(images[0], tattoo.art, tattoo.title);
+
+  document.getElementById("detail-style").textContent = tattoo.style;
+  document.getElementById("detail-title").textContent = tattoo.title;
+  document.getElementById("detail-description").textContent = tattoo.description;
+  document.getElementById("detail-duration").textContent = tattoo.duration;
+  document.getElementById("detail-base-price").textContent = `$${tattoo.basePrice}`;
+  document.getElementById("detail-aftercare").textContent = tattoo.aftercare;
+
+  // Thumbnails: the other 3 images in the array are alternate views/angles of
+  // the same piece. With no photos at all, rotate the placeholder art instead.
+  const altViews = images.slice(1, 4);
+  if (hasPhoto){
+    const thumbSources = altViews.length ? altViews : [images[0]];
+    document.getElementById("detail-thumbnails").innerHTML = thumbSources.map(src => `
+      <button onclick="setDetailMainImage('${src}', '${tattoo.art}', '${tattoo.title.replace(/'/g, "\\'")}')" class="aspect-square rounded-md overflow-hidden border border-token art-icon">
+        ${mediaTag(src, tattoo.title + " — other view", tattoo.art)}
+      </button>
+    `).join("");
+  } else {
+    document.getElementById("detail-thumbnails").innerHTML = [0,90,180,270].map(rot => `
+      <button onclick="document.getElementById('detail-main-image').style.transform='rotate(${rot}deg)'" class="aspect-square rounded-md overflow-hidden border border-token art-icon p-2 flex items-center justify-center" style="transform:rotate(${rot}deg)">
+        ${tattooArt(tattoo.art)}
+      </button>
+    `).join("");
+  }
+  mainEl.style.transform = "rotate(0deg)";
+
+  renderSizeSelector();
+  showView("detail-view");
+}
+
+function setDetailMainImage(src, artKey, title){
+  const mainEl = document.getElementById("detail-main-image");
+  mainEl.style.transform = "rotate(0deg)";
+  if (src){
+    mainEl.classList.remove("p-10");
+    mainEl.innerHTML = mediaTag(src, title, artKey);
+  } else {
+    mainEl.classList.add("p-10");
+    mainEl.innerHTML = tattooArt(artKey);
+  }
+}
+
+function renderSizeSelector(){
+  const tattoo = state.selectedTattoo;
+  const container = document.getElementById("detail-size-selector");
+  container.innerHTML = tattoo.sizes.map((s, i) => `
+    <button onclick="selectSize(${i})" data-size-btn="${i}" class="size-btn border border-token rounded-md px-4 py-2 text-sm font-medium ${i === 0 ? 'ring-2 ring-[var(--color-accent)]' : ''}">
+      ${s.label}
+    </button>
+  `).join("");
+  updateTotalPrice();
+}
+
+function selectSize(index){
+  state.selectedSize = state.selectedTattoo.sizes[index];
+  document.querySelectorAll("[data-size-btn]").forEach(btn => {
+    const active = Number(btn.dataset.sizeBtn) === index;
+    btn.classList.toggle("ring-2", active);
+    btn.classList.toggle("ring-[var(--color-accent)]", active);
+  });
+  updateTotalPrice();
+}
+
+function updateTotalPrice(){
+  const total = state.selectedTattoo.basePrice + state.selectedSize.mod;
+  document.getElementById("detail-total-price").textContent = `$${total}`;
+}
+
+/* =========================================================
+   SERVICE CHOICE VIEW (shop vs. home service) + PRICE MODAL
+========================================================= */
+function proceedToServiceChoice(){
+  document.getElementById("option-shop").classList.remove("selected");
+  document.getElementById("option-home").classList.remove("selected");
+  document.getElementById("shop-panel").classList.add("hidden");
+  document.getElementById("home-panel").classList.add("hidden");
+  showView("service-view");
+}
+
+function selectServiceType(type){
+  state.serviceType = type;
+  document.getElementById("option-shop").classList.toggle("selected", type === "shop");
+  document.getElementById("option-home").classList.toggle("selected", type === "home");
+  document.getElementById("shop-panel").classList.toggle("hidden", type !== "shop");
+  document.getElementById("home-panel").classList.toggle("hidden", type !== "home");
+}
+
+function onCountryChange(){
+  const isUS = document.getElementById("hs-country").value === "us";
+  document.getElementById("hs-state-wrap").classList.toggle("hidden", !isUS);
+  document.getElementById("hs-state").required = isUS;
+}
+
+function confirmShopService(){
+  state.serviceFee = 0;
+  state.serviceAddress = null;
+  openPriceModal();
+}
+
+function confirmHomeService(){
+  const address = {
+    street: document.getElementById("hs-address").value,
+    city: document.getElementById("hs-city").value,
+    state: document.getElementById("hs-state").value,
+    zip: document.getElementById("hs-zip").value,
+    country: document.getElementById("hs-country").value, // 'us' | 'intl'
+  };
+  state.serviceAddress = address;
+
+  if (address.country !== "us"){
+    state.serviceFee = 1200;               // not in America
+  } else if (address.state.trim().toLowerCase() !== "new york" && address.state.trim().toLowerCase() !== "ny"){
+    state.serviceFee = 200;                 // in the US, but not New York
+  } else {
+    state.serviceFee = 0;                   // New York — no travel fee
+  }
+  openPriceModal();
+}
+
+function openPriceModal(){
+  const tattoo = state.selectedTattoo;
+  const size = state.selectedSize;
+  const itemTotal = tattoo.basePrice + size.mod;
+  const total = itemTotal + state.serviceFee;
+
+  const label = state.serviceType === "home"
+    ? `Home service — ${state.serviceAddress.city}, ${state.serviceAddress.country === "us" ? (state.serviceAddress.state || "US") : "international"}`
+    : "In-studio — New York, NY";
+  document.getElementById("modal-service-label").textContent = label;
+  document.getElementById("modal-item-total").textContent = `${tattoo.title} (${size.label}) — $${itemTotal}`;
+  document.getElementById("modal-fee-row").classList.toggle("hidden", state.serviceFee === 0);
+  document.getElementById("modal-fee").textContent = `$${state.serviceFee}`;
+  document.getElementById("modal-total").textContent = `$${total}`;
+
+  const modal = document.getElementById("price-modal");
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  modal.dataset.open = "true";
+}
+
+function closePriceModal(){
+  const modal = document.getElementById("price-modal");
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  modal.dataset.open = "false";
+}
+
+function confirmModalProceed(){
+  closePriceModal();
+  populateBillingSummary();
+  showView("billing-view");
+}
+
+/* =========================================================
+   BILLING VIEW
+========================================================= */
+function populateBillingSummary(){
+  state.cartCount = 1;
+  document.getElementById("cart-badge").textContent = state.cartCount;
+  pulseCartBadge();
+
+  const tattoo = state.selectedTattoo;
+  const size = state.selectedSize;
+  const itemTotal = tattoo.basePrice + size.mod;
+  const fee = state.serviceFee;
+  const grandTotal = itemTotal + fee;
+  const deposit = DEPOSIT_FLAT;
+  const balance = grandTotal - deposit;
+
+  document.getElementById("summary-thumb").innerHTML = tattooMedia(tattoo);
+  document.getElementById("summary-title").textContent = tattoo.title;
+  document.getElementById("summary-size").textContent = `${size.label} size`;
+  document.getElementById("summary-service").textContent = state.serviceType === "home"
+    ? `Home service — ${state.serviceAddress.city}`
+    : "In-studio — New York, NY";
+  document.getElementById("summary-item-total").textContent = `$${itemTotal}`;
+  document.getElementById("summary-fee-row").classList.toggle("hidden", fee === 0);
+  document.getElementById("summary-fee").textContent = `$${fee}`;
+  document.getElementById("summary-deposit").textContent = `$${deposit}`;
+  document.getElementById("summary-balance").textContent = `$${balance}`;
+  document.getElementById("summary-total").textContent = `$${grandTotal}`;
+}
+
+/* =========================================================
+   PAYMENT VIEW
+========================================================= */
+function proceedToPayment(){
+  state.customer = {
+    name: document.getElementById("billing-name").value,
+    email: document.getElementById("billing-email").value,
+    phone: document.getElementById("billing-phone").value,
+    datetime: document.getElementById("billing-datetime").value,
+    notes: document.getElementById("billing-notes").value,
+  };
+
+  document.getElementById("payment-total").textContent = `$${DEPOSIT_FLAT}`;
+  selectPaymentMethod("card");
+  showView("payment-view");
+}
+
+function selectPaymentMethod(method){
+  state.paymentMethod = method;
+  document.querySelectorAll(".payment-tab").forEach(btn => {
+    const active = btn.dataset.method === method;
+    btn.classList.toggle("ring-2", active);
+    btn.classList.toggle("ring-[var(--color-accent)]", active);
+  });
+  document.getElementById("card-fields").classList.toggle("hidden", method !== "card");
+  document.getElementById("wallet-fields").classList.toggle("hidden", method !== "wallet");
+  document.getElementById("crypto-fields").classList.toggle("hidden", method !== "crypto");
+
+  document.querySelectorAll("#card-fields input").forEach(input => {
+    input.required = method === "card";
+  });
+}
+
+/* =========================================================
+   RECEIPT VIEW
+========================================================= */
+function confirmPayment(){
+  const tattoo = state.selectedTattoo;
+  const size = state.selectedSize;
+  const itemTotal = tattoo.basePrice + size.mod;
+  const fee = state.serviceFee;
+  const grandTotal = itemTotal + fee;
+  const deposit = DEPOSIT_FLAT;
+  const balance = grandTotal - deposit;
+  const ref = "BK-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+
+  document.getElementById("receipt-ref").textContent = ref;
+  document.getElementById("receipt-customer-name").textContent = state.customer.name;
+  document.getElementById("receipt-customer-email").textContent = state.customer.email;
+  document.getElementById("receipt-customer-phone").textContent = state.customer.phone;
+  document.getElementById("receipt-datetime").textContent = state.customer.datetime
+    ? new Date(state.customer.datetime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : "—";
+  document.getElementById("receipt-location-label").textContent = state.serviceType === "home"
+    ? `Home service — ${state.serviceAddress.street}, ${state.serviceAddress.city}`
+    : "Bare Skin Studio — 118 Orchard St, New York, NY";
+
+  const feeRow = fee > 0 ? `<tr><td class="py-2 text-muted">Travel fee</td><td class="py-2 text-right">$${fee}</td></tr>` : "";
+
+  document.getElementById("receipt-line-items").innerHTML = `
+    <tr><td class="py-2">${tattoo.title} (${size.label})</td><td class="py-2 text-right">$${itemTotal}</td></tr>
+    ${feeRow}
+    <tr><td class="py-2 text-muted">Deposit paid</td><td class="py-2 text-right">$${deposit}</td></tr>
+    <tr><td class="py-2 text-muted">Remaining balance, due at appointment</td><td class="py-2 text-right">$${balance}</td></tr>
+  `;
+  document.getElementById("receipt-total").textContent = `$${grandTotal}`;
+
+  // Persist the order for the admin dashboard (admin.html reads this same key).
+  saveOrder({
+    ref,
+    customerName: state.customer.name,
+    email: state.customer.email,
+    phone: state.customer.phone,
+    tattooTitle: tattoo.title,
+    size: size.label,
+    serviceType: state.serviceType,
+    serviceLocation: state.serviceType === "home"
+      ? `${state.serviceAddress.city}${state.serviceAddress.state ? ", " + state.serviceAddress.state : ""}${state.serviceAddress.country !== "us" ? " (international)" : ""}`
+      : "In-studio — New York, NY",
+    itemTotal, fee, deposit, balance, total: grandTotal,
+    appointmentAt: state.customer.datetime || null,
+    notes: state.customer.notes || "",
+    createdAt: new Date().toISOString(),
+    status: "upcoming",
+  });
+
+  state.cartCount = 0;
+  document.getElementById("cart-badge").textContent = state.cartCount;
+
+  showView("receipt-view");
+}
+
+function resetAndGoHome(){
+  state = { selectedTattoo: null, selectedSize: null, serviceType: null, serviceFee: 0, serviceAddress: null, customer: null, paymentMethod: "card", cartCount: 0 };
+  document.getElementById("cart-badge").textContent = "0";
+  document.getElementById("billing-form").reset();
+  document.getElementById("payment-form").reset();
+  document.getElementById("home-service-form").reset();
+  showView("home-view");
+}
+
+/* =========================================================
+   TESTIMONIALS — random star ratings (3.5–5.0 in 0.5 steps)
+========================================================= */
+const TESTIMONIALS = [
+  { name: "Jordan M.", quote: "Booked the home service — the artist showed up fully set up and it looked exactly as sterile as the studio photos." },
+  { name: "Priya K.", quote: "My fine line piece healed better than any tattoo I've gotten before. Aftercare notes were genuinely useful." },
+  { name: "Diego R.", quote: "Consultation actually shaped the design instead of pulling something off a wall of flash. Worth the wait for an appointment." },
+  { name: "Aisha T.", quote: "Traveled from out of state and the whole booking flow — deposit, receipt, everything — was painless." },
+  { name: "Sam W.", quote: "Color work held up incredibly well a year later. Already planning the next piece." },
+  { name: "Lena F.", quote: "Studio is spotless and the artist walked me through every sterilization step before we started." },
+  { name: "Marcus D.", quote: "Flew the artist in for a shoot and the setup looked identical to the studio. Zero compromises." },
+  { name: "Grace O.", quote: "First tattoo ever and they talked me through every step. Healed cleanly with no issues." },
+  { name: "Tomás H.", quote: "The traditional rose piece is exactly what I pictured, down to the shading. Booking again for a sleeve." },
+];
+
+function starRating(rating){
+  const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
+  return `
+    <span class="star-row" role="img" aria-label="${rating.toFixed(1)} out of 5 stars">
+      <span class="bg-stars">★★★★★</span>
+      <span class="fg-stars" style="width:${pct}%">★★★★★</span>
+    </span>
+  `;
+}
+
+function renderTestimonials(){
+  const steps = [3.5, 4, 4.5, 5];
+  const grid = document.getElementById("testimonial-grid");
+  grid.innerHTML = TESTIMONIALS.map(t => {
+    const rating = steps[Math.floor(Math.random() * steps.length)];
+    return `
+      <div class="reveal card-hover border border-token rounded-lg p-6 bg-[var(--color-bg)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[var(--color-accent)] opacity-70 mb-2" viewBox="0 0 24 24" fill="currentColor"><path d="M7.17 6C4.87 8.13 3.5 10.9 3.5 14.05c0 2.9 1.7 4.9 4.13 4.9 2.1 0 3.62-1.6 3.62-3.62 0-1.87-1.3-3.34-3.05-3.6-.2-.03-.28-.15-.2-.35.5-1.35 1.72-2.6 3.32-3.36L10.1 6C9 6.6 8 7.2 7.17 6zm10 0c-2.3 2.13-3.67 4.9-3.67 8.05 0 2.9 1.7 4.9 4.13 4.9 2.1 0 3.62-1.6 3.62-3.62 0-1.87-1.3-3.34-3.05-3.6-.2-.03-.28-.15-.2-.35.5-1.35 1.72-2.6 3.32-3.36L20.1 6C19 6.6 18 7.2 17.17 6z"/></svg>
+        <div class="flex items-center gap-2 mb-3">
+          ${starRating(rating)}
+          <span class="text-xs text-muted">${rating.toFixed(1)}</span>
+        </div>
+        <p class="text-sm text-muted mb-4">"${t.quote}"</p>
+        <p class="text-sm font-medium">${t.name}</p>
+      </div>
+    `;
+  }).join("");
+  observeReveals();
+}
+
+/* =========================================================
+   ANIMATION — scroll reveal + count-up stats
+========================================================= */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting){
+      entry.target.classList.add("in-view");
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+function observeReveals(){
+  document.querySelectorAll(".reveal:not(.reveal-bound)").forEach((el, i) => {
+    el.classList.add("reveal-bound");
+    el.style.transitionDelay = `${(i % 4) * 70}ms`;
+    revealObserver.observe(el);
+  });
+}
+
+function animateCountUp(el){
+  const raw = el.textContent.trim();
+  const match = raw.match(/^([\d.]+)(.*)$/);
+  if (!match) return;
+  const end = parseFloat(match[1]);
+  const suffix = match[2];
+  const isFloat = match[1].includes(".");
+  const duration = 1100;
+  const start = performance.now();
+  function tick(now){
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val = end * eased;
+    el.textContent = (isFloat ? val.toFixed(1) : Math.round(val)) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = raw;
+  }
+  requestAnimationFrame(tick);
+}
+
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting){
+      animateCountUp(entry.target);
+      counterObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.4 });
+
+function observeCounters(){
+  document.querySelectorAll(".stat-number").forEach(el => counterObserver.observe(el));
+}
+
+function pulseCartBadge(){
+  const badge = document.getElementById("cart-badge");
+  badge.classList.remove("badge-pulse");
+  void badge.offsetWidth; // restart animation
+  badge.classList.add("badge-pulse");
+}
+
+/* =========================================================
+   BACKEND — AJAX calls to the pure-PHP API in /api. Orders and
+   contact messages are persisted server-side (MySQL) so the
+   separate admin.html dashboard can read/manage them.
+========================================================= */
+const API_BASE = "api/";
+
+async function saveOrder(order){
+  try{
+    const res = await fetch(API_BASE + "create_order.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(order),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success){
+      console.warn("Order save failed:", data.error || res.status);
+    }
+  } catch(e){
+    // Network/API issue shouldn't block the customer from seeing their
+    // receipt — it's already "paid" in this demo flow — but log it.
+    console.warn("Could not reach backend to save order:", e);
+  }
+}
+
+async function submitContactForm(){
+  const payload = {
+    name: document.getElementById("contact-name").value,
+    email: document.getElementById("contact-email").value,
+    placement: document.getElementById("contact-placement").value,
+    message: document.getElementById("contact-message").value,
+  };
+  const form = document.getElementById("contact-form");
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const confirmEl = document.getElementById("contact-confirm");
+  const errorEl = document.getElementById("contact-error");
+
+  confirmEl.classList.add("hidden");
+  errorEl.classList.add("hidden");
+  submitBtn.disabled = true;
+
+  try{
+    const res = await fetch(API_BASE + "create_message.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || "Request failed");
+
+    form.reset();
+    confirmEl.classList.remove("hidden");
+    setTimeout(() => confirmEl.classList.add("hidden"), 5000);
+  } catch(e){
+    errorEl.classList.remove("hidden");
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+document.getElementById("year").textContent = new Date().getFullYear();
+
+(async function init(){
+  await loadCatalog();
+  renderPortfolio();
+  renderTestimonials();
+  observeReveals();
+  observeCounters();
+})();
+</script>
+
+</body>
+</html>
